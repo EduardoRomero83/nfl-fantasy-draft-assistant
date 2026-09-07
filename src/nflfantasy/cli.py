@@ -6,12 +6,12 @@ import sys
 from pathlib import Path
 
 from .alerts import build_alert
-from .config import ensure_config, load_config
+from .config import Config, ensure_config, load_config
 from .dossier import write_dossier
 from .email_report import send_email_report
 from .espn import fetch_players, parse_players
 from .lineup import recommend_lineup
-from .intelligence import analyze_news, load_api_key
+from .intelligence import analyze_draft_round, analyze_news, load_api_key
 from .news import fetch_news
 from .projections import fetch_games, project_week, regular_season_complete
 from .paths import AppPaths
@@ -40,6 +40,7 @@ def _parser() -> argparse.ArgumentParser:
     refresh.add_argument("--input", type=Path, help="Import a saved ESPN JSON response instead.")
     board = subparsers.add_parser("board", help="Show recommendations for the next pick.")
     board.add_argument("--limit", type=int, default=20)
+    subparsers.add_parser("draft", help="Open the continuous live draft room.")
     search = subparsers.add_parser("search", help="Find a player in the current ESPN pool.")
     search.add_argument("query")
     pick = subparsers.add_parser("pick", help="Record the next drafted player.")
@@ -135,6 +136,120 @@ def _write_current_dossier(paths: AppPaths, limit: int) -> None:
     print(f"Wrote {paths.dossier_file}")
 
 
+def _run_draft_room(
+    paths: AppPaths,
+    config: Config,
+    players: list[Player],
+    picks: list[DraftPick],
+) -> None:
+    print("Continuous NFL Fantasy Draft Room")
+    print("Enter a recommendation number or player name.")
+    print("Commands: mine NAME, undo, refresh, board, quit")
+    while True:
+        recommendations = recommend_players(
+            players,
+            picks,
+            config.rules,
+            limit=12,
+            draft_position=config.draft_position,
+        )
+        _print_board(players, picks, config, 12)
+        try:
+            entry = input(f"Pick #{len(picks) + 1}: ").strip()
+        except EOFError:
+            print("Draft room closed.")
+            return
+        if not entry:
+            continue
+        command = entry.casefold()
+        if command in {"quit", "exit", "q"}:
+            print("Draft room closed. All picks are saved.")
+            return
+        if command == "board":
+            continue
+        if command == "undo":
+            if not picks:
+                print("No picks to undo.")
+                continue
+            removed = picks.pop()
+            player = players_by_id(players).get(removed.player_id)
+            save_picks(paths.draft_file, picks)
+            print(f"Removed pick #{removed.overall}: {player.name if player else removed.player_id}")
+            _write_current_dossier(paths, 75)
+            continue
+        if command == "refresh":
+            players = fetch_players(config.season)
+            save_players(paths.players_file, players, "ESPN public fantasy API")
+            print(f"Refreshed {len(players)} ESPN fantasy players.")
+            continue
+
+        force_mine = command.startswith("mine ")
+        query = entry[5:].strip() if force_mine else entry
+        try:
+            if query.isdigit() and 1 <= int(query) <= len(recommendations):
+                player = recommendations[int(query) - 1].player
+            else:
+                player = _find_player(players, query)
+            if player.player_id in {pick.player_id for pick in picks}:
+                raise ValueError(f"{player.name} is already drafted.")
+        except ValueError as error:
+            print(f"Error: {error}")
+            continue
+
+        overall = len(picks) + 1
+        automatic_mine = (
+            next_pick_for_position(
+                len(picks), config.rules.teams, config.draft_position
+            )
+            == overall
+        )
+        is_mine = force_mine or automatic_mine
+        picks.append(
+            DraftPick(
+                overall,
+                player.player_id,
+                config.draft_position if is_mine and config.draft_position else None,
+                is_mine,
+            )
+        )
+        save_picks(paths.draft_file, picks)
+        print(
+            f"Recorded #{overall}: {player.name} ({player.position})"
+            + (" [MINE]" if is_mine else "")
+        )
+        _write_current_dossier(paths, 75)
+
+        if len(picks) % config.rules.teams == 0 and config.gemini.enabled:
+            round_number = len(picks) // config.rules.teams
+            print(f"Round {round_number} complete. Asking Gemini for a strategy review...")
+            updated = recommend_players(
+                players,
+                picks,
+                config.rules,
+                limit=12,
+                draft_position=config.draft_position,
+            )
+            try:
+                review = analyze_draft_round(
+                    round_number,
+                    players,
+                    picks,
+                    updated,
+                    config.rules,
+                    api_key=load_api_key(paths.secrets_file),
+                    model=config.gemini.model,
+                    cache_file=paths.data_dir / "latest-draft-review.json",
+                    budget_file=paths.data_dir / "draft-ai-budget.json",
+                )
+                print("Gemini round adjustment:")
+                print(f"  Primary: {review.primary_pick}")
+                print(f"  Fallbacks: {', '.join(review.fallback_picks)}")
+                print(f"  Roster: {review.roster_assessment}")
+                print(f"  Strategy: {review.strategy_adjustment}")
+            except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+                print(f"Warning: Gemini round review unavailable: {error}")
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -194,7 +309,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if all(checks.values()) else 1
         players = load_players(paths.players_file)
         picks = load_picks(paths.draft_file)
-        if args.command == "board":
+        if args.command == "draft":
+            _run_draft_room(paths, config, players, picks)
+        elif args.command == "board":
             _print_board(players, picks, config, args.limit)
         elif args.command == "search":
             matches = [p for p in players if args.query.casefold() in p.name.casefold()]

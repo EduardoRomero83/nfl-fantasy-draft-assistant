@@ -36,7 +36,7 @@ while ($true) {
     Write-Host "NFL Fantasy Assistant"
     Write-Host "1. Refresh ESPN data"
     Write-Host "2. Show draft recommendations"
-    Write-Host "3. Record a draft pick"
+    Write-Host "3. Open continuous draft room"
     Write-Host "4. Undo the latest pick"
     Write-Host "5. Build post-draft roster from my picks"
     Write-Host "6. Show expected-points lineup"
@@ -49,12 +49,7 @@ while ($true) {
     switch ($choice) {
         "1" { [void](Invoke-Assistant @("refresh")) }
         "2" { [void](Invoke-Assistant @("board", "--limit", "20")) }
-        "3" {
-            $player = Read-Host "Player name"
-            $mine = Read-Host "Was this your pick? (y/n)"
-            if ($mine -eq "y") { [void](Invoke-Assistant @("pick", $player, "--mine")) }
-            else { [void](Invoke-Assistant @("pick", $player)) }
-        }
+        "3" { [void](Invoke-Assistant @("draft")) }
         "4" { [void](Invoke-Assistant @("undo")) }
         "5" { [void](Invoke-Assistant @("roster", "--from-my-picks")) }
         "6" { [void](Invoke-Assistant @("lineup")) }

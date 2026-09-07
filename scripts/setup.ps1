@@ -95,7 +95,7 @@ try {
     Invoke-Checked $venvPython -m nflfantasy schedule-install
 
     Write-Host ""
-    Write-Host "Setup complete. Double-click RUN.cmd to use the assistant."
+    Write-Host "Setup complete. Double-click DRAFT.cmd for the live draft or RUN.cmd for other tools."
     Write-Host "Thursday alerts are scheduled for 2:00 PM local time."
     Write-Host "Setup log: $logFile"
 }

@@ -32,10 +32,10 @@ The setup installs Python 3.13 when needed, creates and reuses a persistent
 validates the result, and installs the Thursday task. Git, VS Code, uv, and an
 ESPN account are not required.
 
-After setup, double-click `RUN.cmd`. Its numbered menu handles refreshes, draft
-recommendations, recording picks, building the post-draft roster, expected-point
-lineups, Thursday alert previews, schedule status, and manual email reports. No
-command-line knowledge is required. Setup and menu failures remain visible and
+After setup, double-click `DRAFT.cmd` for the continuous live draft room or
+`RUN.cmd` for all other tools. The draft room accepts a displayed recommendation
+number or player name, automatically marks your snake-draft selections, and
+recalculates after every pick. Setup, menu, and draft failures remain visible and
 are logged under `%LOCALAPPDATA%\NFLFantasyDraftAssistant\logs`.
 
 Application data stays under `%LOCALAPPDATA%\NFLFantasyDraftAssistant`. Email is
@@ -138,9 +138,30 @@ Outlook must be installed, signed in, and available to the logged-in Windows use
 
 ## During the live draft
 
-Find and record picks as they happen:
+Double-click `DRAFT.cmd`. The current board remains open and asks directly for
+each selection, so returning to the main menu is unnecessary:
+
+```text
+Pick #1: 1
+Pick #2: Justin Jefferson
+Pick #3: mine Jahmyr Gibbs
+```
+
+A number selects that row from the displayed board. `mine NAME` manually marks
+your selection if the draft position was not configured. The commands `undo`,
+`refresh`, `board`, and `quit` are available at every prompt. Picks are saved
+immediately, and reopening `DRAFT.cmd` resumes the same draft.
+
+When Gemini is enabled, completion of each full league round triggers one
+strategy review. Gemini may choose a primary and three fallbacks only from the
+current deterministic recommendation board; it cannot invent players or replace
+the ESPN-based ranking model. Round reviews use a separate local limit of 20
+requests and 100,000 estimated input tokens per day.
+
+Developer command equivalents are:
 
 ```powershell
+.\.venv\Scripts\python.exe -m nflfantasy draft
 .\.venv\Scripts\python.exe -m nflfantasy search "Justin Jefferson"
 .\.venv\Scripts\python.exe -m nflfantasy pick "Justin Jefferson"
 .\.venv\Scripts\python.exe -m nflfantasy pick "Jahmyr Gibbs" --mine
