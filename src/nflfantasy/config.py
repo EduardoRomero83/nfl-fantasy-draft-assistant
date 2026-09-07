@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,6 +74,27 @@ def ensure_config(path: Path) -> bool:
         return False
     path.write_text(DEFAULT_CONFIG, encoding="utf-8")
     return True
+
+
+def update_draft_position(path: Path, draft_position: int) -> Config:
+    config = load_config(path)
+    if not 1 <= draft_position <= config.rules.teams:
+        raise ValueError(
+            f"draft_position must be between 1 and {config.rules.teams}."
+        )
+    source = path.read_text(encoding="utf-8")
+    updated, replacements = re.subn(
+        r"(?m)^(draft_position\s*=\s*)\d+(\s*(?:#.*)?)$",
+        rf"\g<1>{draft_position}\g<2>",
+        source,
+        count=1,
+    )
+    if replacements != 1:
+        raise ValueError("config.toml is missing the root draft_position setting.")
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(updated, encoding="utf-8")
+    temporary.replace(path)
+    return load_config(path)
 
 
 def load_config(path: Path) -> Config:

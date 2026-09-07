@@ -7,8 +7,13 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from nflfantasy.cli import _find_player, _print_board, _run_draft_room
-from nflfantasy.config import Config, GeminiConfig
+from nflfantasy.cli import (
+    _configure_draft_position,
+    _find_player,
+    _print_board,
+    _run_draft_room,
+)
+from nflfantasy.config import Config, GeminiConfig, ensure_config, load_config
 from nflfantasy.intelligence import DraftReview
 from nflfantasy.paths import AppPaths
 from nflfantasy.recommendations import DraftPick, LeagueRules, Player
@@ -77,6 +82,37 @@ class DraftRoomTests(unittest.TestCase):
         self.assertTrue(picks[0].is_mine)
         self.assertEqual(picks[0].fantasy_team, 1)
         self.assertIn("Overall pick #1 - draft slot 1 [YOUR PICK]", prompts[0])
+
+    def test_launch_updates_position_and_reclassifies_existing_picks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            ensure_config(paths.config_file)
+            config = load_config(paths.config_file)
+            picks = [
+                DraftPick(1, 1, 1, True),
+                DraftPick(2, 2, 2, False),
+            ]
+            save_picks(paths.draft_file, picks)
+
+            with patch("builtins.input", return_value="2"):
+                updated = _configure_draft_position(paths, config, picks)
+
+            saved = load_picks(paths.draft_file)
+
+        self.assertEqual(updated.draft_position, 2)
+        self.assertEqual([pick.fantasy_team for pick in saved], [1, 2])
+        self.assertEqual([pick.is_mine for pick in saved], [False, True])
+
+    def test_launch_reprompts_for_invalid_position(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            ensure_config(paths.config_file)
+            config = load_config(paths.config_file)
+            with patch("builtins.input", side_effect=["0", "3"]) as prompt:
+                updated = _configure_draft_position(paths, config, [])
+
+        self.assertEqual(updated.draft_position, 3)
+        self.assertEqual(prompt.call_count, 2)
 
     def test_player_name_variations_resolve_without_gemini(self) -> None:
         players = [

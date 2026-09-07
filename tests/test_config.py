@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from nflfantasy.config import ensure_config, load_config
+from nflfantasy.config import ensure_config, load_config, update_draft_position
 
 
 class ConfigTests(unittest.TestCase):
@@ -30,6 +30,19 @@ class ConfigTests(unittest.TestCase):
             path.write_text("teams = 14\ndraft_position = 15\n[roster]\nQB = 1\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "draft_position"):
                 load_config(path)
+
+    def test_draft_position_update_preserves_other_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.toml"
+            ensure_config(path)
+
+            config = update_draft_position(path, 7)
+            source = path.read_text(encoding="utf-8")
+
+        self.assertEqual(config.draft_position, 7)
+        self.assertIn("teams = 14", source)
+        self.assertIn("[email]", source)
+        self.assertIn("[gemini]", source)
 
 
 if __name__ == "__main__":

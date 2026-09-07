@@ -9,7 +9,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 from .alerts import build_alert
-from .config import Config, ensure_config, load_config
+from .config import Config, ensure_config, load_config, update_draft_position
 from .dossier import write_dossier
 from .email_report import send_email_report
 from .espn import fetch_players, parse_players
@@ -249,6 +249,48 @@ def _clear_draft_state(paths: AppPaths) -> None:
         (paths.data_dir / filename).unlink(missing_ok=True)
 
 
+def _configure_draft_position(
+    paths: AppPaths,
+    config: Config,
+    picks: list[DraftPick],
+) -> Config:
+    current = config.draft_position if 1 <= config.draft_position <= config.rules.teams else None
+    while True:
+        default = f" [{current}]" if current is not None else ""
+        try:
+            answer = input(
+                f"Your draft position (1-{config.rules.teams}){default}: "
+            ).strip()
+        except EOFError as error:
+            raise ValueError("A draft position is required to open the draft room.") from error
+        if not answer and current is not None:
+            draft_position = current
+        else:
+            try:
+                draft_position = int(answer)
+            except ValueError:
+                draft_position = 0
+        if 1 <= draft_position <= config.rules.teams:
+            break
+        print(f"Enter a whole number from 1 to {config.rules.teams}.")
+
+    updated_config = update_draft_position(paths.config_file, draft_position)
+    if picks:
+        picks[:] = [
+            DraftPick(
+                pick.overall,
+                pick.player_id,
+                fantasy_team_for_pick(pick.overall, config.rules.teams),
+                fantasy_team_for_pick(pick.overall, config.rules.teams)
+                == draft_position,
+            )
+            for pick in picks
+        ]
+        save_picks(paths.draft_file, picks)
+    print(f"Draft position {draft_position} saved.")
+    return updated_config
+
+
 def _run_draft_room(
     paths: AppPaths,
     config: Config,
@@ -444,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
         players = load_players(paths.players_file)
         picks = load_picks(paths.draft_file)
         if args.command == "draft":
+            config = _configure_draft_position(paths, config, picks)
             _run_draft_room(paths, config, players, picks)
         elif args.command == "board":
             _print_board(players, picks, config, args.limit)

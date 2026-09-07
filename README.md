@@ -138,8 +138,10 @@ Outlook must be installed, signed in, and available to the logged-in Windows use
 
 ## During the live draft
 
-Double-click `DRAFT.cmd`. The current board remains open and asks directly for
-each selection, so returning to the main menu is unnecessary:
+Double-click `DRAFT.cmd`. It asks for your draft position every time and saves
+the answer to `config.toml`, making it easy to run mock drafts from different
+slots. The current board then remains open and asks directly for each selection,
+so returning to the main menu is unnecessary:
 
 ```text
 Overall pick #1 - draft slot 1 [YOUR PICK]; actual player selected: 1
