@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nfl-fantasy-draft-assistant"
+version = "0.1.0"
+description = "Local, live ESPN fantasy football draft assistant"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+nflfantasy = "nflfantasy.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

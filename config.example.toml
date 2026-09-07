@@ -1,0 +1,28 @@
+season = 2026
+teams = 14
+scoring = "ppr"
+matchup = "head_to_head"
+draft_type = "snake"
+my_team = 0
+draft_position = 0
+
+[roster]
+QB = 1
+RB = 2
+WR = 2
+TE = 1
+FLEX = 1
+K = 1
+BE = 7
+"D/ST" = 1
+
+# Optional on-demand email report. These are not ESPN credentials.
+# Keep the SMTP username and password in the NFLFANTASY_SMTP_USERNAME and
+# NFLFANTASY_SMTP_PASSWORD environment variables.
+[email]
+smtp_host = ""
+smtp_port = 587
+starttls = true
+sender = ""
+recipient = ""
+subject = "NFL fantasy draft board"
