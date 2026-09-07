@@ -1,0 +1,60 @@
+EXAMPLE ONLY - LIVE ESPN DATA, HYPOTHETICAL 14-TEAM PPR SNAKE DRAFT AT SLOT 7
+
+1. PRE-DRAFT
+Recommendations from recommend_players(players, [], rules, limit=15, draft_position=7)
+1. Jahmyr Gibbs | RB/DET | ADP: 1.32 | Value score: 3.444260227647866 | Availability risk: 0.7452465907840451 | Reason: +110.1 consensus value over RB replacement; roster multiplier 1.35; estimated 25% chance to reach pick 7; ADP 1.3.
+2. Bijan Robinson | RB/ATL | ADP: 2.4 | Value score: 2.4861885157050434 | Availability risk: 0.7046038280983193 | Reason: +109.1 consensus value over RB replacement; roster multiplier 1.35; estimated 30% chance to reach pick 7; ADP 2.4.
+3. Jonathan Taylor | RB/IND | ADP: 6.19 | Value score: -0.8045830521372448 | Availability risk: 0.5381943507124154 | Reason: +105.3 consensus value over RB replacement; roster multiplier 1.35; estimated 46% chance to reach pick 7; ADP 6.2.
+4. Jaxon Smith-Njigba | WR/SEA | ADP: 6.35 | Value score: -0.9420131683008282 | Availability risk: 0.5306710561002768 | Reason: +83.8 consensus value over WR replacement; roster multiplier 1.35; estimated 47% chance to reach pick 7; ADP 6.3.
+5. Ja'Marr Chase | WR/CIN | ADP: 4.23 | Value score: -1.1138839952299924 | Availability risk: 0.6279613317433312 | Reason: +85.9 consensus value over WR replacement; roster multiplier 1.35; estimated 37% chance to reach pick 7; ADP 4.2. ESPN status QUESTIONABLE applies a 2-point caution.
+6. Puka Nacua | WR/LAR | ADP: 5.33 | Value score: -2.064754942366357 | Availability risk: 0.5782516474554529 | Reason: +84.8 consensus value over WR replacement; roster multiplier 1.35; estimated 42% chance to reach pick 7; ADP 5.3. ESPN status QUESTIONABLE applies a 2-point caution.
+7. Amon-Ra St. Brown | WR/DET | ADP: 8.45 | Value score: -2.7457582517974872 | Availability risk: 0.43191941726582983 | Reason: +81.7 consensus value over WR replacement; roster multiplier 1.35; estimated 57% chance to reach pick 7; ADP 8.4.
+8. Christian McCaffrey | RB/SF | ADP: 7.72 | Value score: -4.118106750527135 | Availability risk: 0.4660355835090454 | Reason: +103.7 consensus value over RB replacement; roster multiplier 1.35; estimated 53% chance to reach pick 7; ADP 7.7. ESPN status QUESTIONABLE applies a 2-point caution.
+9. James Cook III | RB/BUF | ADP: 10.09 | Value score: -4.164069094159613 | Availability risk: 0.35802303138653846 | Reason: +101.4 consensus value over RB replacement; roster multiplier 1.35; estimated 64% chance to reach pick 7; ADP 10.1.
+10. CeeDee Lamb | WR/DAL | ADP: 11.59 | Value score: -5.477368999228775 | Availability risk: 0.29578966640959203 | Reason: +78.6 consensus value over WR replacement; roster multiplier 1.35; estimated 70% chance to reach pick 7; ADP 11.6.
+11. Justin Jefferson | WR/MIN | ADP: 12.37 | Value score: -6.168104328959067 | Availability risk: 0.26603477631968986 | Reason: +77.8 consensus value over WR replacement; roster multiplier 1.35; estimated 73% chance to reach pick 7; ADP 12.4.
+12. De'Von Achane | RB/MIA | ADP: 13.12 | Value score: -6.837872574714755 | Availability risk: 0.23929085823825236 | Reason: +98.3 consensus value over RB replacement; roster multiplier 1.35; estimated 76% chance to reach pick 7; ADP 13.1.
+13. Saquon Barkley | RB/PHI | ADP: 14.09 | Value score: -7.712587378060432 | Availability risk: 0.2075291260201445 | Reason: +97.4 consensus value over RB replacement; roster multiplier 1.35; estimated 79% chance to reach pick 7; ADP 14.1.
+14. Derrick Henry | RB/BAL | ADP: 16.47 | Value score: -9.899342585847384 | Availability risk: 0.1431141952824625 | Reason: +95.0 consensus value over RB replacement; roster multiplier 1.35; estimated 86% chance to reach pick 7; ADP 16.5.
+15. Omarion Hampton | RB/LAC | ADP: 17.7 | Value score: -11.050702987221177 | Availability risk: 0.11690099574039303 | Reason: +93.8 consensus value over RB replacement; roster multiplier 1.35; estimated 88% chance to reach pick 7; ADP 17.7.
+
+2. DURING-DRAFT
+Twenty completed picks simulated from the 20 eligible players with the lowest positive ESPN ADP:
+Overall 1: Team 1 | Jahmyr Gibbs (RB/DET, ADP 1.32)
+Overall 2: Team 2 | Bijan Robinson (RB/ATL, ADP 2.4)
+Overall 3: Team 3 | Ja'Marr Chase (WR/CIN, ADP 4.23)
+Overall 4: Team 4 | Puka Nacua (WR/LAR, ADP 5.33)
+Overall 5: Team 5 | Jonathan Taylor (RB/IND, ADP 6.19)
+Overall 6: Team 6 | Jaxon Smith-Njigba (WR/SEA, ADP 6.35)
+Overall 7: Team 7 | Christian McCaffrey (RB/SF, ADP 7.72) [MINE]
+Overall 8: Team 8 | Amon-Ra St. Brown (WR/DET, ADP 8.45)
+Overall 9: Team 9 | James Cook III (RB/BUF, ADP 10.09)
+Overall 10: Team 10 | CeeDee Lamb (WR/DAL, ADP 11.59)
+Overall 11: Team 11 | Justin Jefferson (WR/MIN, ADP 12.37)
+Overall 12: Team 12 | De'Von Achane (RB/MIA, ADP 13.12)
+Overall 13: Team 13 | Saquon Barkley (RB/PHI, ADP 14.09)
+Overall 14: Team 14 | Derrick Henry (RB/BAL, ADP 16.47)
+Overall 15: Team 14 | Omarion Hampton (RB/LAC, ADP 17.7)
+Overall 16: Team 13 | Chase Brown (RB/CIN, ADP 17.74)
+Overall 17: Team 12 | Josh Allen (QB/BUF, ADP 19.04)
+Overall 18: Team 11 | Drake London (WR/ATL, ADP 20.69)
+Overall 19: Team 10 | A.J. Brown (WR/NE, ADP 21.38)
+Overall 20: Team 9 | Ashton Jeanty (RB/LV, ADP 21.61)
+
+Hypothetical roster (user, Team 7):
+- Overall pick 7: Christian McCaffrey (RB/SF, ADP 7.72)
+Next selection: overall pick 22.
+
+Recommendations from recommend_players(players, picks, rules, limit=12, draft_position=7)
+1. Trey McBride | TE/ARI | ADP: 23.4 | Value score: -19.202718122244725 | Availability risk: 0.434239374081576 | Reason: +108.3 consensus value over TE replacement; roster multiplier 1.27; estimated 57% chance to reach pick 22; ADP 23.4.
+2. Brock Bowers | TE/LV | ADP: 23.91 | Value score: -19.642184442965643 | Availability risk: 0.41072814765521304 | Reason: +107.8 consensus value over TE replacement; roster multiplier 1.27; estimated 59% chance to reach pick 22; ADP 23.9.
+3. Nico Collins | WR/HOU | ADP: 25.88 | Value score: -19.85344511994976 | Availability risk: 0.32448170664992126 | Reason: +64.3 consensus value over WR replacement; roster multiplier 1.35; estimated 68% chance to reach pick 22; ADP 25.9.
+4. Kenneth Walker III | RB/KC | ADP: 24.39 | Value score: -20.05689309636089 | Availability risk: 0.38896436545363033 | Reason: +87.1 consensus value over RB replacement; roster multiplier 1.27; estimated 61% chance to reach pick 22; ADP 24.4.
+5. George Pickens | WR/DAL | ADP: 28.22 | Value score: -21.927603303326382 | Availability risk: 0.23586776777546115 | Reason: +61.9 consensus value over WR replacement; roster multiplier 1.35; estimated 76% chance to reach pick 22; ADP 28.2.
+6. Jeremiyah Love | RB/ARI | ADP: 25.36 | Value score: -22.899146377638502 | Availability risk: 0.3463821258795007 | Reason: +86.1 consensus value over RB replacement; roster multiplier 1.27; estimated 65% chance to reach pick 22; ADP 25.4. ESPN status QUESTIONABLE applies a 2-point caution.
+7. Rashee Rice | WR/KC | ADP: 29.31 | Value score: -22.912323787469226 | Availability risk: 0.200774595823077 | Reason: +60.8 consensus value over WR replacement; roster multiplier 1.35; estimated 80% chance to reach pick 22; ADP 29.3.
+8. Chris Olave | WR/NO | ADP: 29.67 | Value score: -23.24023846998528 | Availability risk: 0.1900794899950926 | Reason: +60.5 consensus value over WR replacement; roster multiplier 1.35; estimated 81% chance to reach pick 22; ADP 29.7.
+9. Javonte Williams | RB/DAL | ADP: 32.41 | Value score: -27.278035926722954 | Availability risk: 0.12267864224098612 | Reason: +79.1 consensus value over RB replacement; roster multiplier 1.27; estimated 88% chance to reach pick 22; ADP 32.4.
+10. Kyren Williams | RB/LAR | ADP: 34.51 | Value score: -29.267838631602835 | Availability risk: 0.08594621053427887 | Reason: +76.9 consensus value over RB replacement; roster multiplier 1.27; estimated 91% chance to reach pick 22; ADP 34.5.
+11. DeVonta Smith | WR/PHI | ADP: 36.14 | Value score: -29.333899911405993 | Availability risk: 0.06463330380199694 | Reason: +54.0 consensus value over WR replacement; roster multiplier 1.35; estimated 94% chance to reach pick 22; ADP 36.1.
+12. Garrett Wilson | WR/NYJ | ADP: 37.03 | Value score: -30.19553856884963 | Availability risk: 0.055179522949876825 | Reason: +53.1 consensus value over WR replacement; roster multiplier 1.35; estimated 94% chance to reach pick 22; ADP 37.0.

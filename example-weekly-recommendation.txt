@@ -1,0 +1,41 @@
+EXAMPLE ONLY - HYPOTHETICAL ROSTER BUILT FROM LIVE ESPN PUBLIC DATA
+
+NFL FANTASY THURSDAY CHECK
+Generated: 2026-09-07T19:43:53.601175+00:00
+Schedule: Thursday at 2:00 PM local computer time
+
+RECOMMENDED STARTERS
+QB   Josh Allen                      20.1 expected weekly points
+RB   Jahmyr Gibbs                    20.0 expected weekly points
+RB   Christian McCaffrey             19.1 expected weekly points
+WR   Puka Nacua                      21.3 expected weekly points
+WR   Ja'Marr Chase                   20.6 expected weekly points
+TE   Brock Bowers                    10.2 expected weekly points
+D/ST Steelers D/ST                    9.3 expected weekly points
+FLEX Amon-Ra St. Brown               19.6 expected weekly points
+
+Expected starter weekly total: 140.2
+Bench: Jalen Hurts, Bijan Robinson, Jonathan Taylor, Saquon Barkley, Jaxon Smith-Njigba, Drake London
+
+WEEKLY EXPECTED POINTS BY FIXTURE
+Puka Nacua                    21.3 points vs SF (neutral 20.8, fixture +0.5)
+Ja'Marr Chase                 20.6 points vs TB (neutral 19.8, fixture +0.7)
+Josh Allen                    20.1 points at HOU (neutral 21.8, fixture -1.7)
+Jahmyr Gibbs                  20.0 points vs NO (neutral 19.5, fixture +0.5)
+Jalen Hurts                   19.7 points vs WSH (neutral 18.8, fixture +0.9)
+Amon-Ra St. Brown             19.6 points vs NO (neutral 19.1, fixture +0.5)
+Christian McCaffrey           19.1 points at LAR (neutral 20.1, fixture -1.0)
+Bijan Robinson                17.9 points at PIT (neutral 18.5, fixture -0.6)
+Jonathan Taylor               17.7 points vs BAL (neutral 17.1, fixture +0.6)
+Saquon Barkley                17.0 points vs WSH (neutral 16.2, fixture +0.8)
+Jaxon Smith-Njigba            15.7 points vs NE (neutral 15.8, fixture -0.0)
+Drake London                  15.5 points at PIT (neutral 16.0, fixture -0.5)
+Brock Bowers                  10.2 points vs MIA (neutral 9.8, fixture +0.4)
+Steelers D/ST                  9.3 points vs ATL (neutral 8.9, fixture +0.4)
+
+NEWS INTELLIGENCE
+Unavailable: Gemini/news analysis was intentionally skipped for this example; scheduled runs include it when configured.
+ESPN-only recommendations remain in effect.
+
+DATA LIMITATION
+This alert uses ESPN public data without an ESPN account. Weekly expected points use the season baseline, public opponent results, and a bounded home/away fixture adjustment; they are estimates, not ESPN forecasts.
