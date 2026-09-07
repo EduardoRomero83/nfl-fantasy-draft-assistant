@@ -11,6 +11,8 @@ from .dossier import write_dossier
 from .email_report import send_email_report
 from .espn import fetch_players, parse_players
 from .lineup import recommend_lineup
+from .intelligence import analyze_news, load_api_key
+from .news import fetch_news
 from .paths import AppPaths
 from .recommendations import DraftPick, Player, next_pick_for_position, recommend_players
 from .setup_wizard import run_setup_wizard
@@ -261,7 +263,48 @@ def main(argv: list[str] | None = None) -> int:
             if recommendation.missing_projections:
                 print("Projection unavailable: " + ", ".join(player.name for player in recommendation.missing_projections))
         elif args.command in {"alert", "scheduled-alert"}:
-            alert_text = build_alert(config, players, picks, load_roster(paths.roster_file))
+            roster_ids = load_roster(paths.roster_file)
+            intelligence = None
+            articles = []
+            intelligence_warning = None
+            if config.gemini.enabled:
+                try:
+                    by_id = players_by_id(players)
+                    roster = [by_id[player_id] for player_id in roster_ids if player_id in by_id]
+                    candidates = recommend_players(
+                        players, picks, config.rules, limit=10, draft_position=config.draft_position
+                    )
+                    entities = list(dict.fromkeys(
+                        [player.name for player in roster]
+                        + [item.player.name for item in candidates]
+                    ))
+                    articles = fetch_news(entities, config.gemini.max_queries)
+                    if articles:
+                        intelligence = analyze_news(
+                            entities,
+                            articles,
+                            api_key=load_api_key(paths.secrets_file),
+                            model=config.gemini.model,
+                            cache_file=paths.intelligence_file,
+                            budget_file=paths.ai_budget_file,
+                            max_articles=config.gemini.max_articles,
+                            daily_request_limit=config.gemini.daily_request_limit,
+                            daily_token_limit=config.gemini.daily_token_limit,
+                        )
+                    else:
+                        intelligence_warning = "No recent player-specific injury or availability evidence was found."
+                except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+                    intelligence_warning = str(error)
+                    print(f"Warning: Gemini/news analysis unavailable: {error}", file=sys.stderr)
+            alert_text = build_alert(
+                config,
+                players,
+                picks,
+                roster_ids,
+                intelligence,
+                articles,
+                intelligence_warning,
+            )
             paths.alert_file.write_text(alert_text, encoding="utf-8")
             print(alert_text)
             print(f"Wrote {paths.alert_file}")

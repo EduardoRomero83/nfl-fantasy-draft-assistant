@@ -21,6 +21,8 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.draft_position, 0)
         self.assertEqual(config.rules.slots()["BE"], 7)
         self.assertIsNone(config.email)
+        self.assertFalse(config.gemini.enabled)
+        self.assertEqual(config.gemini.max_queries, 4)
 
     def test_invalid_draft_position_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

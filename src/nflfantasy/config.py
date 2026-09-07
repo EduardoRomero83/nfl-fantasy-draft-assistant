@@ -32,6 +32,14 @@ starttls = true
 sender = ""
 recipient = ""
 subject = "NFL fantasy Thursday alert"
+
+[gemini]
+enabled = false
+model = "gemini-2.5-flash"
+max_queries = 4
+max_articles = 12
+daily_request_limit = 2
+daily_token_limit = 20000
 """
 
 
@@ -46,6 +54,16 @@ class EmailConfig:
 
 
 @dataclass(frozen=True)
+class GeminiConfig:
+    enabled: bool = False
+    model: str = "gemini-2.5-flash"
+    max_queries: int = 4
+    max_articles: int = 12
+    daily_request_limit: int = 2
+    daily_token_limit: int = 20000
+
+
+@dataclass(frozen=True)
 class Config:
     season: int
     matchup: str
@@ -54,6 +72,7 @@ class Config:
     draft_position: int
     rules: LeagueRules
     email: EmailConfig | None = None
+    gemini: GeminiConfig = GeminiConfig()
 
 
 def ensure_config(path: Path) -> bool:
@@ -112,6 +131,21 @@ def load_config(path: Path) -> Config:
             recipient=recipient,
             subject=str(email_payload.get("subject", "NFL fantasy Thursday alert")),
         )
+    gemini_payload = payload.get("gemini", {})
+    if not isinstance(gemini_payload, dict):
+        raise ValueError("[gemini] must be a TOML table.")
+    gemini = GeminiConfig(
+        enabled=bool(gemini_payload.get("enabled", False)),
+        model=str(gemini_payload.get("model", "gemini-2.5-flash")).strip(),
+        max_queries=int(gemini_payload.get("max_queries", 4)),
+        max_articles=int(gemini_payload.get("max_articles", 12)),
+        daily_request_limit=int(gemini_payload.get("daily_request_limit", 2)),
+        daily_token_limit=int(gemini_payload.get("daily_token_limit", 20000)),
+    )
+    if not gemini.model or not 1 <= gemini.max_queries <= 10 or not 1 <= gemini.max_articles <= 30:
+        raise ValueError("[gemini] requires a model, 1-10 queries, and 1-30 articles.")
+    if gemini.daily_request_limit < 1 or gemini.daily_token_limit < 1000:
+        raise ValueError("Gemini daily limits must allow at least 1 request and 1000 tokens.")
     return Config(
         season=int(payload.get("season", 2026)),
         matchup=matchup,
@@ -124,4 +158,5 @@ def load_config(path: Path) -> Config:
             scoring=scoring,
         ),
         email=email,
+        gemini=gemini,
     )

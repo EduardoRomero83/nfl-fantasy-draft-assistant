@@ -25,3 +25,13 @@ starttls = true
 sender = ""
 recipient = ""
 subject = "NFL fantasy Thursday alert"
+
+# Optional. SETUP.cmd stores GEMINI_API_KEY only in the private local data folder.
+# Gemini explains supplied Google News evidence; deterministic ESPN rankings remain authoritative.
+[gemini]
+enabled = false
+model = "gemini-2.5-flash"
+max_queries = 4
+max_articles = 12
+daily_request_limit = 2
+daily_token_limit = 20000

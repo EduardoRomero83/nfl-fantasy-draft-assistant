@@ -15,6 +15,8 @@ class AppPaths:
     roster_file: Path
     dossier_file: Path
     alert_file: Path
+    intelligence_file: Path
+    ai_budget_file: Path
     logs_dir: Path
 
     @classmethod
@@ -32,5 +34,7 @@ class AppPaths:
             roster_file=data_dir / "roster.json",
             dossier_file=data_dir / "draft-room-context.md",
             alert_file=data_dir / "latest-alert.txt",
+            intelligence_file=data_dir / "latest-intelligence.json",
+            ai_budget_file=data_dir / "ai-budget.json",
             logs_dir=data_dir / "logs",
         )

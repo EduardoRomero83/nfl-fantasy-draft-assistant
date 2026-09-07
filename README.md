@@ -14,6 +14,8 @@ an AI agent.
 - records every selection locally and recalculates after each pick;
 - supports an unknown draft order now; set `draft_position` later;
 - creates a Thursday 2:00 PM local-time alert and emails it when configured;
+- optionally uses Gemini to explain recent sourced injury news, estimate start likelihood,
+  and name deterministic replacement candidates;
 - writes `%LOCALAPPDATA%\NFLFantasyDraftAssistant\draft-room-context.md`.
 
 It does not automate or submit ESPN draft picks. During the draft, record picks
@@ -24,7 +26,7 @@ as ESPN announces them and keep the ESPN draft room open separately.
 Download or clone this repository, open its folder, and double-click
 `SETUP.cmd`. Answer the prompts; pressing Enter accepts the recommended values.
 The setup installs Python 3.13 when needed, creates and reuses a persistent
-`.venv`, collects optional email settings, downloads ESPN's public player data,
+`.venv`, collects optional email and Gemini settings, downloads ESPN's public player data,
 validates the result, and installs the Thursday task. Git, VS Code, uv, and an
 ESPN account are not required.
 
@@ -36,6 +38,7 @@ are logged under `%LOCALAPPDATA%\NFLFantasyDraftAssistant\logs`.
 
 Application data and mail credentials stay under
 `%LOCALAPPDATA%\NFLFantasyDraftAssistant` and are never stored in this repository.
+The Gemini key is stored in the same private folder, never in `config.toml`.
 
 ## Developer setup
 
@@ -76,7 +79,9 @@ projections are listed explicitly instead of receiving invented estimates.
 
 The Windows task runs every Thursday at 2:00 PM in the computer's local time. It
 refreshes ESPN, writes `%LOCALAPPDATA%\NFLFantasyDraftAssistant\latest-alert.txt`,
-and sends it when email is configured. If the computer is asleep, Windows is
+checks bounded Google News RSS evidence and, when enabled, makes one structured
+Gemini request before sending. RSS or Gemini failure falls back to ESPN-only
+advice and is shown in the alert. If the computer is asleep, Windows is
 configured to wake or catch up when possible. The user must be logged in.
 
 ESPN is not publishing usable 2026 weekly projections yet, so post-draft alerts

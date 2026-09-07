@@ -3,7 +3,18 @@ from __future__ import annotations
 import getpass
 from pathlib import Path
 
+from .config import load_config
 from .paths import AppPaths
+
+
+def _read_secrets(path: Path) -> dict[str, str]:
+    secrets: dict[str, str] = {}
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.partition("=")
+            if separator:
+                secrets[key] = value
+    return secrets
 
 
 def _ask(prompt: str, default: str) -> str:
@@ -26,16 +37,18 @@ def _number(prompt: str, default: int, minimum: int = 0) -> int:
 def run_setup_wizard(paths: AppPaths) -> None:
     print("NFL Fantasy Draft Assistant setup")
     print("Press Enter to accept each suggested value.")
-    season = _number("NFL season", 2026, 2026)
-    teams = _number("Number of fantasy teams", 14, 2)
-    scoring = _ask("Scoring (ppr, half, or standard)", "ppr").lower()
+    existing = load_config(paths.config_file) if paths.config_file.is_file() else None
+    season = _number("NFL season", existing.season if existing else 2026, 2026)
+    teams = _number("Number of fantasy teams", existing.rules.teams if existing else 14, 2)
+    scoring = _ask("Scoring (ppr, half, or standard)", existing.rules.scoring if existing else "ppr").lower()
     while scoring not in {"ppr", "half", "standard"}:
         scoring = _ask("Please enter ppr, half, or standard", "ppr").lower()
-    draft_position = _number("Draft position (0 until ESPN assigns it)", 0)
+    draft_position = _number("Draft position (0 until ESPN assigns it)", existing.draft_position if existing else 0)
     while draft_position > teams:
         print(f"Draft position cannot exceed {teams}.")
         draft_position = _number("Draft position", 0)
 
+    secrets = _read_secrets(paths.secrets_file)
     configure_email = _ask("Configure Thursday email alerts? (y/n)", "y").lower() == "y"
     email_lines = [
         "[email]",
@@ -47,12 +60,14 @@ def run_setup_wizard(paths: AppPaths) -> None:
         'subject = "NFL fantasy Thursday alert"',
     ]
     if configure_email:
-        host = _ask("SMTP host (for Gmail: smtp.gmail.com)", "smtp.gmail.com")
-        port = _number("SMTP port", 587, 1)
-        sender = input("Sender email address: ").strip()
-        recipient = input("Recipient email address: ").strip()
-        username = _ask("SMTP username", sender)
-        password = getpass.getpass("SMTP app password: ")
+        previous_email = existing.email if existing else None
+        host = _ask("SMTP host (for Gmail: smtp.gmail.com)", previous_email.smtp_host if previous_email else "smtp.gmail.com")
+        port = _number("SMTP port", previous_email.smtp_port if previous_email else 587, 1)
+        sender = _ask("Sender email address", previous_email.sender if previous_email else "")
+        recipient = _ask("Recipient email address", previous_email.recipient if previous_email else "")
+        username = _ask("SMTP username", secrets.get("NFLFANTASY_SMTP_USERNAME", sender))
+        password = getpass.getpass("SMTP app password (leave blank to keep existing): ")
+        password = password or secrets.get("NFLFANTASY_SMTP_PASSWORD", "")
         if not sender or not recipient or not username or not password:
             raise ValueError("Email setup requires sender, recipient, username, and app password.")
         email_lines = [
@@ -64,9 +79,20 @@ def run_setup_wizard(paths: AppPaths) -> None:
             f'recipient = "{recipient}"',
             'subject = "NFL fantasy Thursday alert"',
         ]
+        secrets["NFLFANTASY_SMTP_USERNAME"] = username
+        secrets["NFLFANTASY_SMTP_PASSWORD"] = password
+
+    configure_gemini = _ask("Add Gemini injury and start-likelihood analysis? (y/n)", "y").lower() == "y"
+    if configure_gemini:
+        api_key = getpass.getpass("Gemini API key (input is hidden): ").strip()
+        if not api_key and "GEMINI_API_KEY" not in secrets:
+            raise ValueError("Gemini setup requires an API key.")
+        if api_key:
+            secrets["GEMINI_API_KEY"] = api_key
+    if secrets:
         paths.secrets_file.parent.mkdir(parents=True, exist_ok=True)
         paths.secrets_file.write_text(
-            f"NFLFANTASY_SMTP_USERNAME={username}\nNFLFANTASY_SMTP_PASSWORD={password}\n",
+            "".join(f"{key}={value}\n" for key, value in secrets.items()),
             encoding="utf-8",
         )
 
@@ -91,6 +117,14 @@ def run_setup_wizard(paths: AppPaths) -> None:
             '"D/ST" = 1',
             "",
             *email_lines,
+            "",
+            "[gemini]",
+            f"enabled = {'true' if configure_gemini else 'false'}",
+            'model = "gemini-2.5-flash"',
+            "max_queries = 4",
+            "max_articles = 12",
+            "daily_request_limit = 2",
+            "daily_token_limit = 20000",
             "",
         ]
     )
