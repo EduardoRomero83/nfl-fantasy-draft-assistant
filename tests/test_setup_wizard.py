@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from nflfantasy.config import DEFAULT_CONFIG
 from nflfantasy.paths import AppPaths
 from nflfantasy.setup_wizard import run_setup_wizard
 
@@ -108,6 +109,30 @@ class SetupWizardTests(unittest.TestCase):
 
         self.assertIn("GEMINI_API_KEY=replacement-api-key", secrets)
         self.assertNotIn("old-api-key", secrets)
+
+    def test_setup_recovers_from_invalid_existing_gemini_config(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            paths.config_file.write_text(
+                DEFAULT_CONFIG.replace("max_queries = 4", "max_queries = 99"),
+                encoding="utf-8",
+            )
+            answers = iter(["", "", "", "", "n", "n"])
+            with patch("builtins.input", side_effect=lambda prompt: next(answers)), patch(
+                "builtins.print"
+            ) as output:
+                run_setup_wizard(paths)
+
+            config = paths.config_file.read_text(encoding="utf-8")
+
+        self.assertIn("max_queries = 4", config)
+        self.assertTrue(
+            any(
+                "existing configuration is invalid" in str(call.args[0])
+                for call in output.call_args_list
+                if call.args
+            )
+        )
 
 
 if __name__ == "__main__":

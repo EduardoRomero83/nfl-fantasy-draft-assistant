@@ -37,7 +37,13 @@ def _number(prompt: str, default: int, minimum: int = 0) -> int:
 def run_setup_wizard(paths: AppPaths) -> None:
     print("NFL Fantasy Draft Assistant setup")
     print("Press Enter to accept each suggested value.")
-    existing = load_config(paths.config_file) if paths.config_file.is_file() else None
+    existing = None
+    if paths.config_file.is_file():
+        try:
+            existing = load_config(paths.config_file)
+        except ValueError as error:
+            print(f"Warning: existing configuration is invalid ({error}).")
+            print("Setup will replace invalid values with the suggested defaults.")
     season = _number("NFL season", existing.season if existing else 2026, 2026)
     teams = _number("Number of fantasy teams", existing.rules.teams if existing else 14, 2)
     scoring = _ask("Scoring (ppr, half, or standard)", existing.rules.scoring if existing else "ppr").lower()
