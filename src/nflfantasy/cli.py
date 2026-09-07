@@ -87,7 +87,9 @@ def _find_player(players: list[Player], query: str) -> Player:
     raise ValueError(f"Player name is ambiguous: {names}")
 
 
-def _print_board(players: list[Player], picks: list[DraftPick], config: object, limit: int) -> None:
+def _print_board(
+    players: list[Player], picks: list[DraftPick], config: Config, limit: int
+) -> None:
     recommendations = recommend_players(
         players,
         picks,
@@ -96,19 +98,47 @@ def _print_board(players: list[Player], picks: list[DraftPick], config: object, 
         draft_position=config.draft_position,
     )
     next_mine = next_pick_for_position(len(picks), config.rules.teams, config.draft_position)
+    print("")
+    print(f"Selections recorded: {len(picks)}")
+    print(f"Next overall selection: #{len(picks) + 1}")
     print(
-        f"Next overall pick: {len(picks) + 1} | "
-        f"My next pick: {next_mine or 'unknown'} | "
-        f"My roster picks: {sum(pick.is_mine for pick in picks)}"
+        f"Your next selection: #{next_mine}"
+        if next_mine
+        else "Your next selection: unknown (configure your draft position)"
     )
+    print(f"Players on your roster: {sum(pick.is_mine for pick in picks)}")
+    print("")
+    print("Recommended available players:")
     for index, item in enumerate(recommendations, 1):
         player = item.player
-        adp = f"{player.adp:.1f}" if player.adp is not None else "-"
-        projection = f"{player.projected_points:.1f}" if player.projected_points > 0 else "-"
+        adp = (
+            f"pick {player.adp:.1f}"
+            if player.adp is not None
+            else "unavailable"
+        )
+        projection = (
+            f"{player.projected_points:.1f} season points"
+            if player.projected_points > 0
+            else "unavailable"
+        )
+        availability = (
+            f"{1.0 - item.availability_risk:.0%} at selection #{next_mine}"
+            if next_mine is not None and next_mine > len(picks) + 1
+            else "on the board now"
+        )
+        print(f"{index:>2}. {player.name}")
+        print(f"    Position: {player.position} | NFL team: {player.pro_team}")
         print(
-            f"{index:>2}. {player.name:<26} {player.position:<4} {player.pro_team:<3} "
-            f"Proj {projection:>6} Value {item.value_over_replacement:>+6.1f} "
-            f"ADP {adp:>6} | {item.reason}"
+            f"    ESPN season projection: {projection} | "
+            f"Value over replacement: {item.value_over_replacement:+.1f} points"
+        )
+        print(
+            f"    ESPN average draft position: {adp} | "
+            f"Roster-need multiplier: {item.need_multiplier:.2f}x"
+        )
+        print(
+            f"    Estimated availability: {availability} | "
+            f"ESPN injury status: {player.injury_status}"
         )
 
 
@@ -143,7 +173,8 @@ def _run_draft_room(
     picks: list[DraftPick],
 ) -> None:
     print("Continuous NFL Fantasy Draft Room")
-    print("Enter a recommendation number or player name.")
+    print("Record every actual selection made in the ESPN draft, starting with #1.")
+    print("Enter a displayed recommendation number or any player name.")
     print("Commands: mine NAME, undo, refresh, board, quit")
     while True:
         recommendations = recommend_players(
@@ -155,7 +186,9 @@ def _run_draft_room(
         )
         _print_board(players, picks, config, 12)
         try:
-            entry = input(f"Pick #{len(picks) + 1}: ").strip()
+            entry = input(
+                f"Actual player selected at overall pick #{len(picks) + 1}: "
+            ).strip()
         except EOFError:
             print("Draft room closed.")
             return

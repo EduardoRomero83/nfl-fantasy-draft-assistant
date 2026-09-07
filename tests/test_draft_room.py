@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from nflfantasy.cli import _run_draft_room
+from nflfantasy.cli import _print_board, _run_draft_room
 from nflfantasy.config import Config, GeminiConfig
 from nflfantasy.intelligence import DraftReview
 from nflfantasy.paths import AppPaths
@@ -56,7 +58,14 @@ class DraftRoomTests(unittest.TestCase):
     def test_number_records_pick_and_marks_my_snake_slot(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             paths = self._paths(Path(directory))
-            with patch("builtins.input", side_effect=["1", "quit"]), patch(
+            prompts = []
+            answers = iter(["1", "quit"])
+
+            def answer(prompt: str) -> str:
+                prompts.append(prompt)
+                return next(answers)
+
+            with patch("builtins.input", side_effect=answer), patch(
                 "nflfantasy.cli._print_board"
             ), patch("nflfantasy.cli._write_current_dossier"):
                 _run_draft_room(paths, self._config(), self._players(), [])
@@ -66,6 +75,20 @@ class DraftRoomTests(unittest.TestCase):
         self.assertEqual(len(picks), 1)
         self.assertEqual(picks[0].player_id, 1)
         self.assertTrue(picks[0].is_mine)
+        self.assertIn("Actual player selected at overall pick #1", prompts[0])
+
+    def test_board_labels_every_numeric_metric(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            _print_board(self._players(), [], self._config(), 1)
+
+        board = output.getvalue()
+        self.assertIn("Next overall selection: #1", board)
+        self.assertIn("ESPN season projection:", board)
+        self.assertIn("Value over replacement:", board)
+        self.assertIn("ESPN average draft position:", board)
+        self.assertIn("Roster-need multiplier:", board)
+        self.assertIn("Estimated availability:", board)
 
     def test_unknown_name_returns_to_pick_prompt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

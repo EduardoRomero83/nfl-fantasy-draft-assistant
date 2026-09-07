@@ -142,9 +142,9 @@ Double-click `DRAFT.cmd`. The current board remains open and asks directly for
 each selection, so returning to the main menu is unnecessary:
 
 ```text
-Pick #1: 1
-Pick #2: Justin Jefferson
-Pick #3: mine Jahmyr Gibbs
+Actual player selected at overall pick #1: 1
+Actual player selected at overall pick #2: Justin Jefferson
+Actual player selected at overall pick #3: mine Jahmyr Gibbs
 ```
 
 A number selects that row from the displayed board. `mine NAME` manually marks
