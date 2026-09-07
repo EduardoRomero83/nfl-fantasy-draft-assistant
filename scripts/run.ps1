@@ -12,11 +12,20 @@ if (-not (Test-Path $python -PathType Leaf)) {
 
 function Invoke-Assistant {
     param([string[]]$Arguments)
-    & $python -m nflfantasy @Arguments 2>&1 |
-        Tee-Object -FilePath $logFile -Append |
-        Out-Host
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Command failed with exit code $LASTEXITCODE. Log: $logFile" -ForegroundColor Red
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $python -m nflfantasy @Arguments 2>&1 |
+            ForEach-Object { $_.ToString() } |
+            Tee-Object -FilePath $logFile -Append |
+            Out-Host
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) {
+        Write-Host "Command failed with exit code $exitCode. Log: $logFile" -ForegroundColor Red
         return $false
     }
     return $true
