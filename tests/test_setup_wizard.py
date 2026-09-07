@@ -65,6 +65,31 @@ class SetupWizardTests(unittest.TestCase):
         self.assertNotIn("smtp_", config)
         self.assertNotIn("SMTP", secrets)
 
+    def test_setup_reuses_saved_gemini_key_without_prompting(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            paths.secrets_file.write_text(
+                "GEMINI_API_KEY=saved-api-key\n",
+                encoding="utf-8",
+            )
+            answers = iter(["", "", "", "", "n", "y"])
+            with patch("builtins.input", side_effect=lambda prompt: next(answers)), patch(
+                "nflfantasy.setup_wizard.getpass.getpass"
+            ) as getpass, patch("builtins.print") as output:
+                run_setup_wizard(paths)
+
+            secrets = paths.secrets_file.read_text(encoding="utf-8")
+
+        getpass.assert_not_called()
+        self.assertIn("GEMINI_API_KEY=saved-api-key", secrets)
+        self.assertTrue(
+            any(
+                "Reusing the saved Gemini API key." in str(call.args[0])
+                for call in output.call_args_list
+                if call.args
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
