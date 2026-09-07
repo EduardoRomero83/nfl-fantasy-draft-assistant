@@ -306,10 +306,21 @@ def _run_draft_room(
             players,
             picks,
             config.rules,
-            limit=12,
+            limit=20,
             draft_position=config.draft_position,
         )
-        _print_board(players, picks, config, 12)
+        all_recommendations = recommend_players(
+            players,
+            picks,
+            config.rules,
+            limit=len(players),
+            draft_position=config.draft_position,
+        )
+        recommendation_rank = {
+            item.player.player_id: index
+            for index, item in enumerate(all_recommendations, 1)
+        }
+        _print_board(players, picks, config, 20)
         overall = len(picks) + 1
         drafting_slot = fantasy_team_for_pick(overall, config.rules.teams)
         turn_label = (
@@ -367,8 +378,14 @@ def _run_draft_room(
         force_mine = command.startswith("mine ")
         query = entry[5:].strip() if force_mine else entry
         try:
-            if query.isdigit() and 1 <= int(query) <= len(recommendations):
-                player = recommendations[int(query) - 1].player
+            if query.isdigit():
+                selected_rank = int(query)
+                if not 1 <= selected_rank <= len(recommendations):
+                    raise ValueError(
+                        f"Recommendation number must be from 1 to {len(recommendations)}. "
+                        "Enter a player name if the player is not displayed."
+                    )
+                player = recommendations[selected_rank - 1].player
             else:
                 player = _find_player(players, query)
             if player.player_id in {pick.player_id for pick in picks}:
@@ -393,6 +410,13 @@ def _run_draft_room(
             f"{player.name} ({player.position})"
             + (" [MINE]" if is_mine else "")
         )
+        rank = recommendation_rank.get(player.player_id)
+        if rank is None:
+            print(f"{player.name} is now unavailable.")
+        else:
+            print(
+                f"{player.name} was recommendation #{rank} and is now unavailable."
+            )
         _write_current_dossier(paths, 75)
 
         if len(picks) % config.rules.teams == 0 and config.gemini.enabled:

@@ -72,8 +72,10 @@ class DraftRoomTests(unittest.TestCase):
 
             with patch("builtins.input", side_effect=answer), patch(
                 "nflfantasy.cli._print_board"
-            ), patch("nflfantasy.cli._write_current_dossier"):
-                _run_draft_room(paths, self._config(), self._players(), [])
+            ) as board, patch("nflfantasy.cli._write_current_dossier"), patch(
+                "builtins.print"
+            ) as output:
+                _run_draft_room(paths, self._config(), self._players(25), [])
 
             picks = load_picks(paths.draft_file)
 
@@ -82,6 +84,54 @@ class DraftRoomTests(unittest.TestCase):
         self.assertTrue(picks[0].is_mine)
         self.assertEqual(picks[0].fantasy_team, 1)
         self.assertIn("Overall pick #1 - draft slot 1 [YOUR PICK]", prompts[0])
+        self.assertEqual(board.call_args_list[0].args[-1], 20)
+        self.assertTrue(
+            any(
+                "Player 1 was recommendation #1 and is now unavailable."
+                in str(call.args[0])
+                for call in output.call_args_list
+                if call.args
+            )
+        )
+
+    def test_name_entry_reports_prior_recommendation_rank(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            with patch("builtins.input", side_effect=["Player 5", "quit"]), patch(
+                "nflfantasy.cli._print_board"
+            ), patch("nflfantasy.cli._write_current_dossier"), patch(
+                "builtins.print"
+            ) as output:
+                _run_draft_room(paths, self._config(), self._players(), [])
+
+        self.assertTrue(
+            any(
+                "Player 5 was recommendation #5 and is now unavailable."
+                in str(call.args[0])
+                for call in output.call_args_list
+                if call.args
+            )
+        )
+
+    def test_out_of_range_number_requests_a_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            with patch("builtins.input", side_effect=["99", "quit"]), patch(
+                "nflfantasy.cli._print_board"
+            ), patch("nflfantasy.cli._write_current_dossier"), patch(
+                "builtins.print"
+            ) as output:
+                _run_draft_room(paths, self._config(), self._players(), [])
+
+        self.assertFalse(paths.draft_file.exists())
+        self.assertTrue(
+            any(
+                "Enter a player name if the player is not displayed."
+                in str(call.args[0])
+                for call in output.call_args_list
+                if call.args
+            )
+        )
 
     def test_launch_updates_position_and_reclassifies_existing_picks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

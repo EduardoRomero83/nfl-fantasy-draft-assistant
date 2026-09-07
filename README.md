@@ -151,10 +151,14 @@ Overall pick #2 - draft slot 2; actual player selected: DRAKE London
 Overall pick #3 - draft slot 3; actual player selected: j.jefferson
 ```
 
-A number selects that row from the displayed board. `mine NAME` manually marks
-your selection if the draft position was not configured. Player matching ignores
-case and punctuation, so variants such as `DRAKE London` and `d.london` match
-Drake London. It also accepts unambiguous surname-first forms and close typos.
+A numbered top-20 recommendation board is shown before every selection. Entering
+`10` selects the player currently shown as recommendation 10; entering a player
+name remains available for anyone outside the displayed list. After recording a
+pick, the draft room reports that player's previous recommendation rank and marks
+the player unavailable. `mine NAME` manually marks your selection if the draft
+position was not configured. Player matching ignores case and punctuation, so
+variants such as `DRAKE London` and `d.london` match Drake London. It also accepts
+unambiguous surname-first forms and close typos.
 The prompt shows the snake-draft slot for every selection and labels
 your turns as `[YOUR PICK]`. The commands `undo`, `reset`, `refresh`, `board`,
 and `quit` are available at every prompt. Picks are saved immediately, and reopening
