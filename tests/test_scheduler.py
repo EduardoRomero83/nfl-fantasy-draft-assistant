@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from nflfantasy.scheduler import TASK_NAME, install_windows_task, task_action
+from nflfantasy.scheduler import TASK_NAME, disable_windows_task, install_windows_task, task_action
 
 
 class SchedulerTests(unittest.TestCase):
@@ -31,6 +31,17 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(task_command[task_command.index("/ST") + 1], "14:00")
         self.assertIn("Thursday at 2:00 PM", message)
         self.assertIn("StartWhenAvailable", run.call_args_list[2].args[0][-1])
+        self.assertEqual(
+            run.call_args_list[3].args[0],
+            ["schtasks.exe", "/Change", "/TN", TASK_NAME, "/Enable"],
+        )
+
+    @patch("nflfantasy.scheduler._run")
+    def test_disable_stops_completed_season_task(self, run: object) -> None:
+        message = disable_windows_task()
+        command = run.call_args.args[0]
+        self.assertEqual(command, ["schtasks.exe", "/Change", "/TN", TASK_NAME, "/Disable"])
+        self.assertIn("regular season is complete", message)
 
 
 if __name__ == "__main__":

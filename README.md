@@ -92,6 +92,9 @@ checks bounded Google News RSS evidence and, when enabled, makes one structured
 Gemini request before sending. RSS or Gemini failure falls back to ESPN-only
 advice and is shown in the alert. If the computer is asleep, Windows is
 configured to wake or catch up when possible. The user must be logged in.
+After ESPN reports a complete regular-season schedule with every game finished,
+the next scheduled run sends no alert, makes no Gemini request, and disables its
+own Thursday task. Running `SETUP.cmd` for a later season installs/enables it again.
 
 ESPN is not publishing usable 2026 weekly projections yet. Post-draft alerts
 therefore divide available full-season projections into a weekly baseline and

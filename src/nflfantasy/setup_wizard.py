@@ -84,7 +84,9 @@ def run_setup_wizard(paths: AppPaths) -> None:
 
     configure_gemini = _ask("Add Gemini injury and start-likelihood analysis? (y/n)", "y").lower() == "y"
     if configure_gemini:
-        api_key = getpass.getpass("Gemini API key (input is hidden): ").strip()
+        api_key = getpass.getpass(
+            "Gemini API key (the same key used by UCL is allowed; input is hidden): "
+        ).strip()
         if not api_key and "GEMINI_API_KEY" not in secrets:
             raise ValueError("Gemini setup requires an API key.")
         if api_key:

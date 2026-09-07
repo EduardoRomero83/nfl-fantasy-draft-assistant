@@ -84,12 +84,18 @@ def install_windows_task(root: Path | None = None) -> str:
         "Set-ScheduledTask -InputObject $task | Out-Null"
     )
     _run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", settings_script])
+    _run(["schtasks.exe", "/Change", "/TN", TASK_NAME, "/Enable"])
     return f'Installed "{TASK_NAME}" for Thursday at 2:00 PM.'
 
 
 def remove_windows_task() -> str:
     _run(["schtasks.exe", "/Delete", "/TN", TASK_NAME, "/F"])
     return f'Removed "{TASK_NAME}".'
+
+
+def disable_windows_task() -> str:
+    _run(["schtasks.exe", "/Change", "/TN", TASK_NAME, "/Disable"])
+    return f'Disabled "{TASK_NAME}" because the NFL regular season is complete.'
 
 
 def task_status() -> str:

@@ -14,6 +14,7 @@ SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
     "?dates={calendar_year}&limit=1000"
 )
+MINIMUM_COMPLETE_REGULAR_SEASON_GAMES = 270
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,15 @@ def fetch_games(season: int) -> list[Game]:
                 if game.season in {season - 1, season} and game.season_type == 2:
                     games[game.game_id] = game
     return list(games.values())
+
+
+def regular_season_complete(games: list[Game], season: int) -> bool:
+    season_games = [
+        game for game in games if game.season == season and game.season_type == 2
+    ]
+    return len(season_games) >= MINIMUM_COMPLETE_REGULAR_SEASON_GAMES and all(
+        game.completed for game in season_games
+    )
 
 
 def _team_strengths(games: list[Game]) -> dict[str, tuple[float, float]]:

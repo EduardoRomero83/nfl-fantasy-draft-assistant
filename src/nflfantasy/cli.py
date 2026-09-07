@@ -13,11 +13,11 @@ from .espn import fetch_players, parse_players
 from .lineup import recommend_lineup
 from .intelligence import analyze_news, load_api_key
 from .news import fetch_news
-from .projections import fetch_games, project_week
+from .projections import fetch_games, project_week, regular_season_complete
 from .paths import AppPaths
 from .recommendations import DraftPick, Player, next_pick_for_position, recommend_players
 from .setup_wizard import run_setup_wizard
-from .scheduler import install_windows_task, remove_windows_task, task_status
+from .scheduler import disable_windows_task, install_windows_task, remove_windows_task, task_status
 from .storage import (
     load_picks,
     load_player_metadata,
@@ -268,7 +268,14 @@ def main(argv: list[str] | None = None) -> int:
             weekly_projections = {}
             projection_warning = None
             try:
-                weekly_projections = project_week(players, fetch_games(config.season))
+                games = fetch_games(config.season)
+                if args.command == "scheduled-alert" and regular_season_complete(
+                    games, config.season
+                ):
+                    print(disable_windows_task())
+                    print("No alert or Gemini request was generated.")
+                    return 0
+                weekly_projections = project_week(players, games)
                 if not weekly_projections:
                     projection_warning = "No upcoming NFL fixture projections were available."
             except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
