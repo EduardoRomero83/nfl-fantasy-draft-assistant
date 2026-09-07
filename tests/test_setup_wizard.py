@@ -65,14 +65,14 @@ class SetupWizardTests(unittest.TestCase):
         self.assertNotIn("smtp_", config)
         self.assertNotIn("SMTP", secrets)
 
-    def test_setup_reuses_saved_gemini_key_without_prompting(self) -> None:
+    def test_setup_reuses_saved_gemini_key_without_reentering_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             paths = self._paths(Path(directory))
             paths.secrets_file.write_text(
                 "GEMINI_API_KEY=saved-api-key\n",
                 encoding="utf-8",
             )
-            answers = iter(["", "", "", "", "n", "y"])
+            answers = iter(["", "", "", "", "n", "y", ""])
             with patch("builtins.input", side_effect=lambda prompt: next(answers)), patch(
                 "nflfantasy.setup_wizard.getpass.getpass"
             ) as getpass, patch("builtins.print") as output:
@@ -89,6 +89,25 @@ class SetupWizardTests(unittest.TestCase):
                 if call.args
             )
         )
+
+    def test_setup_can_replace_saved_gemini_key(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            paths.secrets_file.write_text(
+                "GEMINI_API_KEY=old-api-key\n",
+                encoding="utf-8",
+            )
+            answers = iter(["", "", "", "", "n", "y", "n"])
+            with patch("builtins.input", side_effect=lambda prompt: next(answers)), patch(
+                "nflfantasy.setup_wizard.getpass.getpass",
+                return_value="replacement-api-key",
+            ):
+                run_setup_wizard(paths)
+
+            secrets = paths.secrets_file.read_text(encoding="utf-8")
+
+        self.assertIn("GEMINI_API_KEY=replacement-api-key", secrets)
+        self.assertNotIn("old-api-key", secrets)
 
 
 if __name__ == "__main__":

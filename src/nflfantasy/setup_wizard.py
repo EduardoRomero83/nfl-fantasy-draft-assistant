@@ -69,7 +69,12 @@ def run_setup_wizard(paths: AppPaths) -> None:
         ]
     configure_gemini = _ask("Add Gemini injury and start-likelihood analysis? (y/n)", "y").lower() == "y"
     if configure_gemini:
-        if secrets.get("GEMINI_API_KEY", "").strip():
+        saved_api_key = secrets.get("GEMINI_API_KEY", "").strip()
+        reuse_saved_key = (
+            saved_api_key
+            and _ask("Keep the saved Gemini API key? (y/n)", "y").lower() == "y"
+        )
+        if reuse_saved_key:
             print("Reusing the saved Gemini API key.")
         else:
             api_key = getpass.getpass(
