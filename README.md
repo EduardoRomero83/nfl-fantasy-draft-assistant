@@ -152,9 +152,14 @@ your selection if the draft position was not configured. Player matching ignores
 case and punctuation, so variants such as `DRAKE London` and `d.london` match
 Drake London. It also accepts unambiguous surname-first forms and close typos.
 The prompt shows the snake-draft slot for every selection and labels
-your turns as `[YOUR PICK]`. The commands `undo`, `refresh`, `board`, and `quit`
-are available at every prompt. Picks are saved immediately, and reopening
+your turns as `[YOUR PICK]`. The commands `undo`, `reset`, `refresh`, `board`,
+and `quit` are available at every prompt. Picks are saved immediately, and reopening
 `DRAFT.cmd` resumes the same draft.
+
+For a mock draft, enter `reset` when finished and type `RESET` to confirm.
+The same action is menu option 12 in `RUN.cmd`. Reset removes recorded picks,
+the derived roster, and cached draft reviews while keeping ESPN player data,
+configuration, email settings, and the Gemini key.
 
 When Gemini is enabled, completion of each full league round triggers one
 strategy review. Gemini may choose a primary and three fallbacks only from the

@@ -57,7 +57,7 @@ def _parser() -> argparse.ArgumentParser:
     pick.add_argument("--mine", action="store_true", help="Mark this as your pick.")
     pick.add_argument("--team", type=int, help="Fantasy team number, if known.")
     subparsers.add_parser("undo", help="Remove the latest recorded pick.")
-    reset = subparsers.add_parser("reset", help="Clear all recorded picks.")
+    reset = subparsers.add_parser("reset", help="Clear the current draft and derived draft state.")
     reset.add_argument("--yes", action="store_true", required=True)
     dossier = subparsers.add_parser("dossier", help="Write the agent-ready Markdown context.")
     dossier.add_argument("--limit", type=int, default=75)
@@ -242,6 +242,13 @@ def _write_current_dossier(paths: AppPaths, limit: int) -> None:
     print(f"Wrote {paths.dossier_file}")
 
 
+def _clear_draft_state(paths: AppPaths) -> None:
+    save_picks(paths.draft_file, [])
+    save_roster(paths.roster_file, [])
+    for filename in ("latest-draft-review.json", "draft-ai-budget.json"):
+        (paths.data_dir / filename).unlink(missing_ok=True)
+
+
 def _run_draft_room(
     paths: AppPaths,
     config: Config,
@@ -251,7 +258,7 @@ def _run_draft_room(
     print("Continuous NFL Fantasy Draft Room")
     print("Record every actual selection made in the ESPN draft, starting with #1.")
     print("Enter a displayed recommendation number or any player name.")
-    print("Commands: mine NAME, undo, refresh, board, quit")
+    print("Commands: mine NAME, undo, reset, refresh, board, quit")
     while True:
         recommendations = recommend_players(
             players,
@@ -293,6 +300,21 @@ def _run_draft_room(
             save_picks(paths.draft_file, picks)
             print(f"Removed pick #{removed.overall}: {player.name if player else removed.player_id}")
             _write_current_dossier(paths, 75)
+            continue
+        if command in {"reset", "delete"}:
+            try:
+                confirmation = input(
+                    "Type RESET to delete all recorded draft picks: "
+                ).strip()
+            except EOFError:
+                confirmation = ""
+            if confirmation != "RESET":
+                print("Draft reset canceled.")
+                continue
+            _clear_draft_state(paths)
+            picks.clear()
+            _write_current_dossier(paths, 75)
+            print("Draft reset. Player data, settings, and secrets were kept.")
             continue
         if command == "refresh":
             players = fetch_players(config.season)
@@ -447,8 +469,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Removed pick #{removed.overall}: {players_by_id(players)[removed.player_id].name}")
             _write_current_dossier(paths, 75)
         elif args.command == "reset":
-            save_picks(paths.draft_file, [])
-            print("Draft picks cleared.")
+            _clear_draft_state(paths)
+            print("Draft picks, derived roster, and draft review cache cleared.")
             _write_current_dossier(paths, 75)
         elif args.command == "dossier":
             _write_current_dossier(paths, args.limit)

@@ -11,8 +11,8 @@ from nflfantasy.cli import _find_player, _print_board, _run_draft_room
 from nflfantasy.config import Config, GeminiConfig
 from nflfantasy.intelligence import DraftReview
 from nflfantasy.paths import AppPaths
-from nflfantasy.recommendations import LeagueRules, Player
-from nflfantasy.storage import load_picks
+from nflfantasy.recommendations import DraftPick, LeagueRules, Player
+from nflfantasy.storage import load_picks, load_roster, save_picks, save_roster
 
 
 class DraftRoomTests(unittest.TestCase):
@@ -128,6 +128,57 @@ class DraftRoomTests(unittest.TestCase):
                 if call.args
             )
         )
+
+    def test_confirmed_reset_clears_only_draft_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            picks = [DraftPick(1, 1, 1, True)]
+            save_picks(paths.draft_file, picks)
+            save_roster(paths.roster_file, [1])
+            paths.config_file.write_text("settings", encoding="utf-8")
+            paths.secrets_file.write_text("GEMINI_API_KEY=secret", encoding="utf-8")
+            paths.players_file.write_text("players", encoding="utf-8")
+            review = paths.data_dir / "latest-draft-review.json"
+            budget = paths.data_dir / "draft-ai-budget.json"
+            review.write_text("review", encoding="utf-8")
+            budget.write_text("budget", encoding="utf-8")
+
+            with patch(
+                "builtins.input", side_effect=["reset", "RESET", "quit"]
+            ), patch("nflfantasy.cli._print_board"), patch(
+                "nflfantasy.cli._write_current_dossier"
+            ):
+                _run_draft_room(paths, self._config(), self._players(), picks)
+
+            remaining_picks = load_picks(paths.draft_file)
+            remaining_roster = load_roster(paths.roster_file)
+            kept_files = [
+                paths.config_file.exists(),
+                paths.secrets_file.exists(),
+                paths.players_file.exists(),
+            ]
+            removed_files = [review.exists(), budget.exists()]
+
+        self.assertEqual(remaining_picks, [])
+        self.assertEqual(remaining_roster, [])
+        self.assertEqual(kept_files, [True, True, True])
+        self.assertEqual(removed_files, [False, False])
+
+    def test_unconfirmed_reset_keeps_draft(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self._paths(Path(directory))
+            picks = [DraftPick(1, 1, 1, True)]
+            save_picks(paths.draft_file, picks)
+            with patch(
+                "builtins.input", side_effect=["reset", "no", "quit"]
+            ), patch("nflfantasy.cli._print_board"), patch(
+                "nflfantasy.cli._write_current_dossier"
+            ):
+                _run_draft_room(paths, self._config(), self._players(), picks)
+
+            remaining_picks = load_picks(paths.draft_file)
+
+        self.assertEqual(len(remaining_picks), 1)
 
     def test_gemini_reviews_each_completed_round(self) -> None:
         review = DraftReview(

@@ -45,7 +45,8 @@ while ($true) {
     Write-Host "9. Show Thursday schedule status"
     Write-Host "10. Reconfigure settings and email"
     Write-Host "11. Exit"
-    $choice = Read-Host "Choose 1-11"
+    Write-Host "12. Delete/reset the current draft"
+    $choice = Read-Host "Choose 1-12"
     switch ($choice) {
         "1" { [void](Invoke-Assistant @("refresh")) }
         "2" { [void](Invoke-Assistant @("board", "--limit", "20")) }
@@ -58,7 +59,16 @@ while ($true) {
         "9" { [void](Invoke-Assistant @("schedule-status")) }
         "10" { [void](Invoke-Assistant @("configure")) }
         "11" { exit 0 }
-        default { Write-Host "Please choose a number from 1 to 11." }
+        "12" {
+            $confirmation = Read-Host "Type RESET to delete all draft picks and derived roster state"
+            if ($confirmation -ceq "RESET") {
+                [void](Invoke-Assistant @("reset", "--yes"))
+            }
+            else {
+                Write-Host "Draft reset canceled."
+            }
+        }
+        default { Write-Host "Please choose a number from 1 to 12." }
     }
     if ($choice -ne "11") { Read-Host "Press Enter to continue" }
 }
