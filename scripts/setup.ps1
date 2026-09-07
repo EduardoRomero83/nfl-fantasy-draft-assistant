@@ -17,11 +17,26 @@ function Invoke-Checked {
     }
 }
 
+function Test-Python313 {
+    param(
+        [Parameter(Mandatory = $true)][string]$Executable,
+        [string[]]$Arguments = @()
+    )
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Executable @Arguments -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 13) else 1)" >$null 2>&1
+        return $LASTEXITCODE -eq 0
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 function Find-Python313 {
     $launcher = Get-Command py.exe -ErrorAction SilentlyContinue
     if ($launcher -ne $null) {
-        & $launcher.Source -3.13 -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 13) else 1)" 2>$null
-        if ($LASTEXITCODE -eq 0) {
+        if (Test-Python313 -Executable $launcher.Source -Arguments @("-3.13")) {
             return @($launcher.Source, "-3.13")
         }
     }
@@ -29,8 +44,7 @@ function Find-Python313 {
         Get-ChildItem (Join-Path $env:LOCALAPPDATA "Programs\Python\Python3*\python.exe"), "C:\Program Files\Python3*\python.exe" -ErrorAction SilentlyContinue
     ) | Sort-Object FullName -Descending
     foreach ($candidate in $candidates) {
-        & $candidate.FullName -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 13) else 1)" 2>$null
-        if ($LASTEXITCODE -eq 0) {
+        if (Test-Python313 -Executable $candidate.FullName) {
             return @($candidate.FullName)
         }
     }
@@ -38,8 +52,17 @@ function Find-Python313 {
 }
 
 try {
+    $venvDirectory = Join-Path $PWD ".venv"
     $venvPython = Join-Path $PWD ".venv\Scripts\python.exe"
-    if (-not (Test-Path $venvPython -PathType Leaf)) {
+    $venvIsValid = $false
+    if (Test-Path $venvPython -PathType Leaf) {
+        $venvIsValid = Test-Python313 -Executable $venvPython
+        if (-not $venvIsValid) {
+            Write-Host "The existing Python environment is invalid. Rebuilding it..."
+            Remove-Item -LiteralPath $venvDirectory -Recurse -Force
+        }
+    }
+    if (-not $venvIsValid) {
         $python = @(Find-Python313)
         if ($python.Count -eq 0) {
             Write-Host "Python 3.13 is not installed. Installing it now..."
@@ -60,7 +83,7 @@ try {
         }
         $pythonExecutable = $python[0]
         $pythonArguments = @($python | Select-Object -Skip 1)
-        Invoke-Checked $pythonExecutable @pythonArguments -m venv .venv
+        Invoke-Checked $pythonExecutable @pythonArguments -m venv $venvDirectory
     }
 
     Invoke-Checked $venvPython -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 13) else 1)"
