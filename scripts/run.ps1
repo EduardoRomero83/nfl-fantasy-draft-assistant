@@ -12,7 +12,9 @@ if (-not (Test-Path $python -PathType Leaf)) {
 
 function Invoke-Assistant {
     param([string[]]$Arguments)
-    & $python -m nflfantasy @Arguments 2>&1 | Tee-Object -FilePath $logFile -Append
+    & $python -m nflfantasy @Arguments 2>&1 |
+        Tee-Object -FilePath $logFile -Append |
+        Out-Host
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Command failed with exit code $LASTEXITCODE. Log: $logFile" -ForegroundColor Red
         return $false
