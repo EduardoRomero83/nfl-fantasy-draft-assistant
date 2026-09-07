@@ -16,13 +16,12 @@ K = 1
 BE = 7
 "D/ST" = 1
 
-# Optional on-demand email report. These are not ESPN credentials.
-# Keep the SMTP username and password in the NFLFANTASY_SMTP_USERNAME and
-# NFLFANTASY_SMTP_PASSWORD environment variables.
+# Optional Thursday email alert. These are not ESPN credentials. SETUP.cmd
+# collects the SMTP username and app password into the private local data folder.
 [email]
 smtp_host = ""
 smtp_port = 587
 starttls = true
 sender = ""
 recipient = ""
-subject = "NFL fantasy draft board"
+subject = "NFL fantasy Thursday alert"

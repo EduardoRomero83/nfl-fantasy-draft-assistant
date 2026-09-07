@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from .alerts import build_alert
 from .config import ensure_config, load_config
 from .dossier import write_dossier
 from .email_report import send_email_report
@@ -13,6 +14,7 @@ from .lineup import recommend_lineup
 from .paths import AppPaths
 from .recommendations import DraftPick, Player, next_pick_for_position, recommend_players
 from .setup_wizard import run_setup_wizard
+from .scheduler import install_windows_task, remove_windows_task, task_status
 from .storage import (
     load_picks,
     load_player_metadata,
@@ -52,6 +54,13 @@ def _parser() -> argparse.ArgumentParser:
     roster.add_argument("players", nargs="*", help="Player names or ESPN IDs.")
     roster.add_argument("--from-my-picks", action="store_true", help="Use picks recorded with --mine.")
     subparsers.add_parser("lineup", help="Recommend starters by full-season expected points.")
+    alert = subparsers.add_parser("alert", help="Write a preview of the Thursday alert.")
+    alert.add_argument("--refresh", action="store_true", help="Refresh ESPN first.")
+    alert.add_argument("--send", action="store_true", help="Email the alert after writing it.")
+    subparsers.add_parser("scheduled-alert", help=argparse.SUPPRESS)
+    subparsers.add_parser("schedule-install", help="Schedule Thursday alerts for 2:00 PM.")
+    subparsers.add_parser("schedule-remove", help="Remove the Thursday alert task.")
+    subparsers.add_parser("schedule-status", help="Show the Thursday alert task status.")
     subparsers.add_parser("setup", help="Initialize, refresh ESPN, and write the first dossier.")
     return parser
 
@@ -124,6 +133,10 @@ def _write_current_dossier(paths: AppPaths, limit: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
     args = _parser().parse_args(argv)
     paths = AppPaths.discover()
     try:
@@ -141,11 +154,21 @@ def main(argv: list[str] | None = None) -> int:
                 ("Players", paths.players_file), ("Draft", paths.draft_file),
                 ("Roster", paths.roster_file),
                 ("Dossier", paths.dossier_file),
+                ("Alert", paths.alert_file),
             ):
                 print(f"{label:<8} {path}")
             return 0
+        if args.command == "schedule-install":
+            print(install_windows_task())
+            return 0
+        if args.command == "schedule-remove":
+            print(remove_windows_task())
+            return 0
+        if args.command == "schedule-status":
+            print(task_status())
+            return 0
         config = load_config(paths.config_file)
-        if args.command in {"refresh", "setup"}:
+        if args.command in {"refresh", "setup"} or (args.command == "alert" and args.refresh) or args.command == "scheduled-alert":
             if args.command == "refresh" and args.input:
                 payload = json.loads(args.input.read_text(encoding="utf-8"))
                 players = parse_players(payload, config.season)
@@ -237,10 +260,23 @@ def main(argv: list[str] | None = None) -> int:
             print("Bench: " + ", ".join(player.name for player in recommendation.bench))
             if recommendation.missing_projections:
                 print("Projection unavailable: " + ", ".join(player.name for player in recommendation.missing_projections))
+        elif args.command in {"alert", "scheduled-alert"}:
+            alert_text = build_alert(config, players, picks, load_roster(paths.roster_file))
+            paths.alert_file.write_text(alert_text, encoding="utf-8")
+            print(alert_text)
+            print(f"Wrote {paths.alert_file}")
+            should_send = args.command == "scheduled-alert" or args.send
+            if should_send and config.email is not None:
+                send_email_report(paths.alert_file, config.email, paths.secrets_file)
+                print(f"Sent alert to {config.email.recipient}")
+            elif args.command == "scheduled-alert":
+                print("Email is not configured; the alert was saved locally only.")
+            elif args.send:
+                raise ValueError("Configure [email] before sending an alert.")
         elif args.command == "setup":
             _write_current_dossier(paths, 75)
         return 0
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
 

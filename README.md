@@ -13,7 +13,7 @@ an AI agent.
 - ranks players by value over positional replacement, roster need, ADP, and injury status;
 - records every selection locally and recalculates after each pick;
 - supports an unknown draft order now; set `draft_position` later;
-- sends the current draft report by email only when explicitly requested;
+- creates a Thursday 2:00 PM local-time alert and emails it when configured;
 - writes `%LOCALAPPDATA%\NFLFantasyDraftAssistant\draft-room-context.md`.
 
 It does not automate or submit ESPN draft picks. During the draft, record picks
@@ -23,12 +23,16 @@ as ESPN announces them and keep the ESPN draft room open separately.
 
 Download or clone this repository, open its folder, and double-click
 `SETUP.cmd`. Answer the prompts; pressing Enter accepts the recommended values.
-The setup installs Python 3.13 when needed, creates the private local
-configuration, downloads ESPN's public player data, and validates the result.
+The setup installs Python 3.13 when needed, creates and reuses a persistent
+`.venv`, collects optional email settings, downloads ESPN's public player data,
+validates the result, and installs the Thursday task. Git, VS Code, uv, and an
+ESPN account are not required.
 
 After setup, double-click `RUN.cmd`. Its numbered menu handles refreshes, draft
 recommendations, recording picks, building the post-draft roster, expected-point
-lineups, and manual email reports. No command-line knowledge is required.
+lineups, Thursday alert previews, schedule status, and manual email reports. No
+command-line knowledge is required. Setup and menu failures remain visible and
+are logged under `%LOCALAPPDATA%\NFLFantasyDraftAssistant\logs`.
 
 Application data and mail credentials stay under
 `%LOCALAPPDATA%\NFLFantasyDraftAssistant` and are never stored in this repository.
@@ -70,11 +74,15 @@ menu option 5 to build the roster from those picks and option 6 to recommend the
 starting lineup by ESPN full-season expected points. Players without trustworthy
 projections are listed explicitly instead of receiving invented estimates.
 
-ESPN is not publishing usable 2026 weekly projections yet. Scheduled lineup
-emails are therefore disabled. Once weekly projection coverage is available, the
-intended schedule is Thursday evening before the first game and Sunday morning
-before the main slate; there is no useful reason to send recurring preseason
-alerts.
+The Windows task runs every Thursday at 2:00 PM in the computer's local time. It
+refreshes ESPN, writes `%LOCALAPPDATA%\NFLFantasyDraftAssistant\latest-alert.txt`,
+and sends it when email is configured. If the computer is asleep, Windows is
+configured to wake or catch up when possible. The user must be logged in.
+
+ESPN is not publishing usable 2026 weekly projections yet, so post-draft alerts
+currently show available full-season expected points and mark missing values as
+`N/A`. The alert explicitly asks for a manual injury and Thursday-player check.
+The model can move to weekly expected points once ESPN publishes them reliably.
 
 ## Before the draft
 
@@ -90,20 +98,23 @@ Open the generated `draft-room-context.md` or attach it to another agent. It
 contains league settings, source freshness, tiers, current recommendations,
 recorded picks, roster construction, risks, and a ready-made discussion prompt.
 
-## On-demand email
+## Thursday alert and email
 
-There is no recurring alert schedule. To email the current report manually, set
-`smtp_host`, `sender`, and `recipient` under `[email]` in `config.toml`, then set
-the mail account credentials only in the current environment:
+`SETUP.cmd` asks whether to configure email and stores the SMTP app credential
+only in the private local data folder. Choose menu option 7 to preview exactly
+what Thursday's alert will contain and option 9 to inspect the task status.
+
+Developer equivalents are:
 
 ```powershell
-$env:NFLFANTASY_SMTP_USERNAME = "your-mail-account"
-$env:NFLFANTASY_SMTP_PASSWORD = "your-app-password"
-.\.venv\Scripts\python.exe -m nflfantasy email
+.\.venv\Scripts\python.exe -m nflfantasy alert
+.\.venv\Scripts\python.exe -m nflfantasy schedule-status
+.\.venv\Scripts\python.exe -m nflfantasy schedule-install
 ```
 
-The command regenerates the dossier and sends it as a Markdown attachment. SMTP
-credentials are unrelated to ESPN and are never written to the application data.
+The watchdog uses `.venv\Scripts\python.exe`, captures stdout and stderr, rejects
+nonzero exits, times out after 30 minutes, and appends monthly logs. SMTP
+credentials are unrelated to ESPN and are never committed to GitHub.
 
 ## During the live draft
 

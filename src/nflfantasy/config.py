@@ -31,7 +31,7 @@ smtp_port = 587
 starttls = true
 sender = ""
 recipient = ""
-subject = "NFL fantasy draft board"
+subject = "NFL fantasy Thursday alert"
 """
 
 
@@ -110,7 +110,7 @@ def load_config(path: Path) -> Config:
             starttls=bool(email_payload.get("starttls", True)),
             sender=sender,
             recipient=recipient,
-            subject=str(email_payload.get("subject", "NFL fantasy draft board")),
+            subject=str(email_payload.get("subject", "NFL fantasy Thursday alert")),
         )
     return Config(
         season=int(payload.get("season", 2026)),

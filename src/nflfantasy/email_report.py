@@ -37,13 +37,11 @@ def send_email_report(
     message["Subject"] = settings.subject
     message["From"] = settings.sender
     message["To"] = settings.recipient
-    message.set_content(
-        "The current NFL fantasy draft board is attached. This report was sent manually; "
-        "no recurring alert schedule is configured."
-    )
+    report_kind = "Thursday lineup alert" if path.suffix.lower() == ".txt" else "draft board"
+    message.set_content(f"The current NFL fantasy {report_kind} is attached.")
     message.add_attachment(
         path.read_text(encoding="utf-8"),
-        subtype="markdown",
+        subtype="plain" if path.suffix.lower() == ".txt" else "markdown",
         filename=path.name,
     )
 

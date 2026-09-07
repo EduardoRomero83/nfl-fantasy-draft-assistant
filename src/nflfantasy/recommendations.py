@@ -80,6 +80,19 @@ def _quality(player: Player, use_projections: bool) -> float:
     return max(0.0, 400.0 - player.adp) if player.adp is not None else 0.0
 
 
+def _injury_penalty(status: str) -> float:
+    normalized = status.upper().strip()
+    if normalized in {"", "ACTIVE", "NORMAL", "HEALTHY"}:
+        return 0.0
+    if normalized == "QUESTIONABLE":
+        return 2.0
+    if normalized == "DOUBTFUL":
+        return 8.0
+    if normalized in {"OUT", "INJURY_RESERVE", "IR", "SUSPENSION", "SUSPENDED"}:
+        return 15.0
+    return 5.0
+
+
 def _replacement_values(
     players: list[Player], rules: LeagueRules, use_projections: bool
 ) -> dict[str, float]:
@@ -165,12 +178,20 @@ def recommend_players(
                 1.0 + exp((next_my_pick - player.adp) / sqrt(rules.teams * 2))
             )
         availability_risk = 1.0 - availability_probability
-        injury_penalty = 12.0 if player.injury_status not in {"ACTIVE", "NORMAL", ""} else 0.0
-        score = (
-            vor * need * (0.35 + 0.65 * availability_probability)
-            + adp_gap * 0.35
-            - injury_penalty
-        )
+        injury_penalty = _injury_penalty(player.injury_status)
+        if use_projections:
+            score = (
+                vor * need * (0.35 + 0.65 * availability_probability)
+                + adp_gap * 0.35
+                - injury_penalty
+            )
+        else:
+            score = (
+                -(player.adp or 400.0)
+                + (need - 1.0) * 20.0
+                - availability_risk * 3.0
+                - injury_penalty
+            )
         basis = "points" if use_projections else "consensus value"
         availability = (
             f" estimated {availability_probability:.0%} chance to reach pick {next_my_pick};"
@@ -181,6 +202,11 @@ def recommend_players(
             f"{vor:+.1f} {basis} over {player.position} replacement; "
             f"roster multiplier {need:.2f};{availability} "
             + (f"ADP {player.adp:.1f}." if player.adp is not None else "ADP unavailable.")
+            + (
+                f" ESPN status {player.injury_status} applies a {injury_penalty:.0f}-point caution."
+                if injury_penalty
+                else ""
+            )
         )
         results.append(
             Recommendation(player, score, vor, need, availability_risk, reason)

@@ -36,7 +36,7 @@ def run_setup_wizard(paths: AppPaths) -> None:
         print(f"Draft position cannot exceed {teams}.")
         draft_position = _number("Draft position", 0)
 
-    configure_email = _ask("Configure manual email reports? (y/n)", "n").lower() == "y"
+    configure_email = _ask("Configure Thursday email alerts? (y/n)", "y").lower() == "y"
     email_lines = [
         "[email]",
         'smtp_host = ""',
@@ -44,7 +44,7 @@ def run_setup_wizard(paths: AppPaths) -> None:
         "starttls = true",
         'sender = ""',
         'recipient = ""',
-        'subject = "NFL fantasy draft board"',
+        'subject = "NFL fantasy Thursday alert"',
     ]
     if configure_email:
         host = _ask("SMTP host (for Gmail: smtp.gmail.com)", "smtp.gmail.com")
@@ -62,7 +62,7 @@ def run_setup_wizard(paths: AppPaths) -> None:
             "starttls = true",
             f'sender = "{sender}"',
             f'recipient = "{recipient}"',
-            'subject = "NFL fantasy draft board"',
+            'subject = "NFL fantasy Thursday alert"',
         ]
         paths.secrets_file.parent.mkdir(parents=True, exist_ok=True)
         paths.secrets_file.write_text(

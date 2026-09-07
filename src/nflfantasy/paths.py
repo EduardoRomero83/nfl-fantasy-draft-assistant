@@ -14,6 +14,8 @@ class AppPaths:
     draft_file: Path
     roster_file: Path
     dossier_file: Path
+    alert_file: Path
+    logs_dir: Path
 
     @classmethod
     def discover(cls) -> "AppPaths":
@@ -29,4 +31,6 @@ class AppPaths:
             draft_file=data_dir / "draft.json",
             roster_file=data_dir / "roster.json",
             dossier_file=data_dir / "draft-room-context.md",
+            alert_file=data_dir / "latest-alert.txt",
+            logs_dir=data_dir / "logs",
         )

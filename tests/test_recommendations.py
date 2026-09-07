@@ -59,6 +59,29 @@ class RecommendationTests(unittest.TestCase):
         self.assertIn("consensus value", recommendations[0].reason)
         self.assertGreater(recommendations[0].value_over_replacement, 0)
 
+    def test_empty_roster_adp_fallback_follows_consensus_order(self) -> None:
+        players = [
+            Player(1, "Top Receiver", "WR", "A", 0, adp=1),
+            Player(2, "Top Running Back", "RB", "B", 0, adp=2),
+            Player(3, "Top Tight End", "TE", "C", 0, adp=3),
+        ]
+
+        recommendations = recommend_players(players, [], self.rules)
+
+        self.assertEqual([item.player.player_id for item in recommendations], [1, 2, 3])
+
+    def test_questionable_status_is_less_severe_than_out(self) -> None:
+        players = [
+            Player(1, "Questionable", "WR", "A", 0, adp=1, injury_status="QUESTIONABLE"),
+            Player(2, "Out", "WR", "B", 0, adp=1, injury_status="OUT"),
+        ]
+
+        recommendations = recommend_players(players, [], self.rules)
+
+        self.assertEqual(recommendations[0].player.player_id, 1)
+        self.assertIn("QUESTIONABLE", recommendations[0].reason)
+        self.assertIn("2-point caution", recommendations[0].reason)
+
     def test_snake_order_finds_next_pick(self) -> None:
         self.assertEqual(next_pick_for_position(0, 12, 4), 4)
         self.assertEqual(next_pick_for_position(4, 12, 4), 21)
