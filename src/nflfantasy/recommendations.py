@@ -70,6 +70,18 @@ def next_pick_for_position(picks_made: int, teams: int, draft_position: int) -> 
     return None
 
 
+def fantasy_team_for_pick(overall: int, teams: int) -> int:
+    if overall < 1:
+        raise ValueError("overall pick must be at least 1.")
+    if teams < 2:
+        raise ValueError("teams must be at least 2.")
+    round_number = (overall - 1) // teams + 1
+    position_in_round = (overall - 1) % teams + 1
+    if round_number % 2:
+        return position_in_round
+    return teams - position_in_round + 1
+
+
 def _position_counts(players: list[Player]) -> Counter[str]:
     return Counter(player.position for player in players)
 

@@ -142,15 +142,19 @@ Double-click `DRAFT.cmd`. The current board remains open and asks directly for
 each selection, so returning to the main menu is unnecessary:
 
 ```text
-Actual player selected at overall pick #1: 1
-Actual player selected at overall pick #2: Justin Jefferson
-Actual player selected at overall pick #3: mine Jahmyr Gibbs
+Overall pick #1 - draft slot 1 [YOUR PICK]; actual player selected: 1
+Overall pick #2 - draft slot 2; actual player selected: DRAKE London
+Overall pick #3 - draft slot 3; actual player selected: j.jefferson
 ```
 
 A number selects that row from the displayed board. `mine NAME` manually marks
-your selection if the draft position was not configured. The commands `undo`,
-`refresh`, `board`, and `quit` are available at every prompt. Picks are saved
-immediately, and reopening `DRAFT.cmd` resumes the same draft.
+your selection if the draft position was not configured. Player matching ignores
+case and punctuation, so variants such as `DRAKE London` and `d.london` match
+Drake London. It also accepts unambiguous surname-first forms and close typos.
+The prompt shows the snake-draft slot for every selection and labels
+your turns as `[YOUR PICK]`. The commands `undo`, `refresh`, `board`, and `quit`
+are available at every prompt. Picks are saved immediately, and reopening
+`DRAFT.cmd` resumes the same draft.
 
 When Gemini is enabled, completion of each full league round triggers one
 strategy review. Gemini may choose a primary and three fallbacks only from the

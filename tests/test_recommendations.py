@@ -6,6 +6,7 @@ from nflfantasy.recommendations import (
     DraftPick,
     LeagueRules,
     Player,
+    fantasy_team_for_pick,
     next_pick_for_position,
     recommend_players,
 )
@@ -87,6 +88,12 @@ class RecommendationTests(unittest.TestCase):
         self.assertEqual(next_pick_for_position(4, 12, 4), 21)
         self.assertEqual(next_pick_for_position(21, 12, 4), 28)
         self.assertIsNone(next_pick_for_position(0, 12, 0))
+
+    def test_snake_order_identifies_team_for_every_pick(self) -> None:
+        self.assertEqual(
+            [fantasy_team_for_pick(overall, 4) for overall in range(1, 9)],
+            [1, 2, 3, 4, 4, 3, 2, 1],
+        )
 
 
 if __name__ == "__main__":

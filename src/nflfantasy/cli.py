@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+import unicodedata
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from .alerts import build_alert
@@ -15,7 +18,13 @@ from .intelligence import analyze_draft_round, analyze_news, load_api_key
 from .news import fetch_news
 from .projections import fetch_games, project_week, regular_season_complete
 from .paths import AppPaths
-from .recommendations import DraftPick, Player, next_pick_for_position, recommend_players
+from .recommendations import (
+    DraftPick,
+    Player,
+    fantasy_team_for_pick,
+    next_pick_for_position,
+    recommend_players,
+)
 from .setup_wizard import run_setup_wizard
 from .scheduler import disable_windows_task, install_windows_task, remove_windows_task, task_status
 from .storage import (
@@ -69,18 +78,85 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _normalize_player_name(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value.casefold())
+    ascii_text = "".join(
+        character
+        for character in decomposed
+        if not unicodedata.combining(character)
+    )
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", ascii_text).split())
+
+
+def _player_aliases(name: str) -> tuple[set[str], set[str]]:
+    normalized = _normalize_player_name(name)
+    tokens = normalized.split()
+    exact = {normalized, normalized.replace(" ", "")}
+    fuzzy = {normalized}
+    if len(tokens) >= 2:
+        family_name = " ".join(tokens[1:])
+        initial_family = f"{tokens[0][0]} {family_name}"
+        exact.update(
+            {
+                family_name,
+                tokens[-1],
+                initial_family,
+                initial_family.replace(" ", ""),
+                " ".join(reversed(tokens)),
+            }
+        )
+        fuzzy.add(initial_family)
+    return exact, fuzzy
+
+
 def _find_player(players: list[Player], query: str) -> Player:
     if query.isdigit():
         exact_id = [player for player in players if player.player_id == int(query)]
         if exact_id:
             return exact_id[0]
-    normalized = query.casefold().strip()
-    exact = [player for player in players if player.name.casefold() == normalized]
+    normalized = _normalize_player_name(query)
+    if not normalized:
+        raise ValueError("Enter a player name or ESPN player ID.")
+    aliases = {
+        player.player_id: _player_aliases(player.name)
+        for player in players
+    }
+    exact = [
+        player
+        for player in players
+        if normalized in aliases[player.player_id][0]
+    ]
     if len(exact) == 1:
         return exact[0]
-    matches = [player for player in players if normalized in player.name.casefold()]
+    matches = [
+        player
+        for player in players
+        if normalized in _normalize_player_name(player.name)
+    ]
     if len(matches) == 1:
         return matches[0]
+    if not exact and not matches and len(normalized) >= 4:
+        scores = [
+            (
+                max(
+                    SequenceMatcher(None, normalized, alias).ratio()
+                    for alias in aliases[player.player_id][1]
+                ),
+                player,
+            )
+            for player in players
+        ]
+        best_score = max((score for score, _ in scores), default=0.0)
+        close = [
+            player
+            for score, player in scores
+            if score >= 0.82 and best_score - score <= 0.03
+        ]
+        if len(close) == 1:
+            return close[0]
+        matches = close
+    elif exact:
+        matches = exact
     if not matches:
         raise ValueError(f"No player matches {query!r}.")
     names = ", ".join(f"{player.name} [{player.player_id}]" for player in matches[:10])
@@ -185,9 +261,17 @@ def _run_draft_room(
             draft_position=config.draft_position,
         )
         _print_board(players, picks, config, 12)
+        overall = len(picks) + 1
+        drafting_slot = fantasy_team_for_pick(overall, config.rules.teams)
+        turn_label = (
+            " [YOUR PICK]"
+            if drafting_slot == config.draft_position
+            else ""
+        )
         try:
             entry = input(
-                f"Actual player selected at overall pick #{len(picks) + 1}: "
+                f"Overall pick #{overall} - draft slot {drafting_slot}"
+                f"{turn_label}; actual player selected: "
             ).strip()
         except EOFError:
             print("Draft room closed.")
@@ -229,25 +313,20 @@ def _run_draft_room(
             print(f"Error: {error}")
             continue
 
-        overall = len(picks) + 1
-        automatic_mine = (
-            next_pick_for_position(
-                len(picks), config.rules.teams, config.draft_position
-            )
-            == overall
-        )
+        automatic_mine = drafting_slot == config.draft_position
         is_mine = force_mine or automatic_mine
         picks.append(
             DraftPick(
                 overall,
                 player.player_id,
-                config.draft_position if is_mine and config.draft_position else None,
+                drafting_slot,
                 is_mine,
             )
         )
         save_picks(paths.draft_file, picks)
         print(
-            f"Recorded #{overall}: {player.name} ({player.position})"
+            f"Recorded #{overall} for draft slot {drafting_slot}: "
+            f"{player.name} ({player.position})"
             + (" [MINE]" if is_mine else "")
         )
         _write_current_dossier(paths, 75)

@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from nflfantasy.cli import _print_board, _run_draft_room
+from nflfantasy.cli import _find_player, _print_board, _run_draft_room
 from nflfantasy.config import Config, GeminiConfig
 from nflfantasy.intelligence import DraftReview
 from nflfantasy.paths import AppPaths
@@ -75,7 +75,27 @@ class DraftRoomTests(unittest.TestCase):
         self.assertEqual(len(picks), 1)
         self.assertEqual(picks[0].player_id, 1)
         self.assertTrue(picks[0].is_mine)
-        self.assertIn("Actual player selected at overall pick #1", prompts[0])
+        self.assertEqual(picks[0].fantasy_team, 1)
+        self.assertIn("Overall pick #1 - draft slot 1 [YOUR PICK]", prompts[0])
+
+    def test_player_name_variations_resolve_without_gemini(self) -> None:
+        players = [
+            Player(1, "Drake London", "WR", "ATL", 0, 10),
+            Player(2, "Justin Jefferson", "WR", "MIN", 0, 2),
+        ]
+
+        for query in ("DRAKE London", "d.london", "London, Drake", "Drake Londn"):
+            with self.subTest(query=query):
+                self.assertEqual(_find_player(players, query).player_id, 1)
+
+    def test_ambiguous_surname_is_rejected(self) -> None:
+        players = [
+            Player(1, "A.J. Brown", "WR", "PHI", 0, 10),
+            Player(2, "Marquise Brown", "WR", "KC", 0, 80),
+        ]
+
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            _find_player(players, "Brown")
 
     def test_board_labels_every_numeric_metric(self) -> None:
         output = io.StringIO()
@@ -135,8 +155,12 @@ class DraftRoomTests(unittest.TestCase):
                     self._players(),
                     [],
                 )
+            draft_slots = [
+                pick.fantasy_team for pick in load_picks(paths.draft_file)
+            ]
 
         analyze.assert_called_once()
+        self.assertEqual(draft_slots, [1, 2])
 
 
 if __name__ == "__main__":
