@@ -26,10 +26,6 @@ BE = 7
 "D/ST" = 1
 
 [email]
-smtp_host = ""
-smtp_port = 587
-starttls = true
-sender = ""
 recipient = ""
 subject = "NFL fantasy Thursday alert"
 
@@ -45,10 +41,6 @@ daily_token_limit = 20000
 
 @dataclass(frozen=True)
 class EmailConfig:
-    smtp_host: str
-    smtp_port: int
-    starttls: bool
-    sender: str
     recipient: str
     subject: str
 
@@ -114,20 +106,11 @@ def load_config(path: Path) -> Config:
     if not isinstance(email_payload, dict):
         raise ValueError("[email] must be a TOML table.")
     email = None
-    if email_payload and any(str(email_payload.get(key, "")) for key in ("smtp_host", "sender", "recipient")):
-        smtp_host = str(email_payload.get("smtp_host", "")).strip()
-        sender = str(email_payload.get("sender", "")).strip()
+    if email_payload and str(email_payload.get("recipient", "")).strip():
         recipient = str(email_payload.get("recipient", "")).strip()
-        if not smtp_host or not sender or not recipient:
-            raise ValueError("[email] requires smtp_host, sender, and recipient together.")
-        smtp_port = int(email_payload.get("smtp_port", 587))
-        if not 1 <= smtp_port <= 65535:
-            raise ValueError("email.smtp_port must be between 1 and 65535.")
+        if "@" not in recipient or recipient.startswith("@") or recipient.endswith("@"):
+            raise ValueError("email.recipient must be a valid email address.")
         email = EmailConfig(
-            smtp_host=smtp_host,
-            smtp_port=smtp_port,
-            starttls=bool(email_payload.get("starttls", True)),
-            sender=sender,
             recipient=recipient,
             subject=str(email_payload.get("subject", "NFL fantasy Thursday alert")),
         )

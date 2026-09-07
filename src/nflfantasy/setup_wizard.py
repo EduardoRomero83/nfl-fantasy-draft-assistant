@@ -49,39 +49,24 @@ def run_setup_wizard(paths: AppPaths) -> None:
         draft_position = _number("Draft position", 0)
 
     secrets = _read_secrets(paths.secrets_file)
+    secrets.pop("NFLFANTASY_SMTP_USERNAME", None)
+    secrets.pop("NFLFANTASY_SMTP_PASSWORD", None)
     configure_email = _ask("Configure Thursday email alerts? (y/n)", "y").lower() == "y"
     email_lines = [
         "[email]",
-        'smtp_host = ""',
-        "smtp_port = 587",
-        "starttls = true",
-        'sender = ""',
         'recipient = ""',
         'subject = "NFL fantasy Thursday alert"',
     ]
     if configure_email:
         previous_email = existing.email if existing else None
-        host = _ask("SMTP host (for Gmail: smtp.gmail.com)", previous_email.smtp_host if previous_email else "smtp.gmail.com")
-        port = _number("SMTP port", previous_email.smtp_port if previous_email else 587, 1)
-        sender = _ask("Sender email address", previous_email.sender if previous_email else "")
         recipient = _ask("Recipient email address", previous_email.recipient if previous_email else "")
-        username = _ask("SMTP username", secrets.get("NFLFANTASY_SMTP_USERNAME", sender))
-        password = getpass.getpass("SMTP app password (leave blank to keep existing): ")
-        password = password or secrets.get("NFLFANTASY_SMTP_PASSWORD", "")
-        if not sender or not recipient or not username or not password:
-            raise ValueError("Email setup requires sender, recipient, username, and app password.")
+        if "@" not in recipient or recipient.startswith("@") or recipient.endswith("@"):
+            raise ValueError("Email setup requires a valid recipient address.")
         email_lines = [
             "[email]",
-            f'smtp_host = "{host}"',
-            f"smtp_port = {port}",
-            "starttls = true",
-            f'sender = "{sender}"',
             f'recipient = "{recipient}"',
             'subject = "NFL fantasy Thursday alert"',
         ]
-        secrets["NFLFANTASY_SMTP_USERNAME"] = username
-        secrets["NFLFANTASY_SMTP_PASSWORD"] = password
-
     configure_gemini = _ask("Add Gemini injury and start-likelihood analysis? (y/n)", "y").lower() == "y"
     if configure_gemini:
         api_key = getpass.getpass(
@@ -91,7 +76,7 @@ def run_setup_wizard(paths: AppPaths) -> None:
             raise ValueError("Gemini setup requires an API key.")
         if api_key:
             secrets["GEMINI_API_KEY"] = api_key
-    if secrets:
+    if secrets or paths.secrets_file.is_file():
         paths.secrets_file.parent.mkdir(parents=True, exist_ok=True)
         paths.secrets_file.write_text(
             "".join(f"{key}={value}\n" for key, value in secrets.items()),

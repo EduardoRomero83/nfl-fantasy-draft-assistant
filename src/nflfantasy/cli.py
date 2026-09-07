@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             if config.email is None:
                 raise ValueError("Configure [email] before sending a report.")
             _write_current_dossier(paths, args.limit)
-            send_email_report(paths.dossier_file, config.email, paths.secrets_file)
+            send_email_report(paths.dossier_file, config.email)
             print(f"Sent report to {config.email.recipient}")
         elif args.command == "roster":
             if args.from_my_picks and args.players:
@@ -329,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {paths.alert_file}")
             should_send = args.command == "scheduled-alert" or args.send
             if should_send and config.email is not None:
-                send_email_report(paths.alert_file, config.email, paths.secrets_file)
+                send_email_report(paths.alert_file, config.email)
                 print(f"Sent alert to {config.email.recipient}")
             elif args.command == "scheduled-alert":
                 print("Email is not configured; the alert was saved locally only.")

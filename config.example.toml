@@ -16,13 +16,8 @@ K = 1
 BE = 7
 "D/ST" = 1
 
-# Optional Thursday email alert. These are not ESPN credentials. SETUP.cmd
-# collects the SMTP username and app password into the private local data folder.
+# Optional Thursday email alert sent through the signed-in Classic Outlook app.
 [email]
-smtp_host = ""
-smtp_port = 587
-starttls = true
-sender = ""
 recipient = ""
 subject = "NFL fantasy Thursday alert"
 

@@ -38,9 +38,10 @@ lineups, Thursday alert previews, schedule status, and manual email reports. No
 command-line knowledge is required. Setup and menu failures remain visible and
 are logged under `%LOCALAPPDATA%\NFLFantasyDraftAssistant\logs`.
 
-Application data and mail credentials stay under
-`%LOCALAPPDATA%\NFLFantasyDraftAssistant` and are never stored in this repository.
-The Gemini key is stored in the same private folder, never in `config.toml`.
+Application data stays under `%LOCALAPPDATA%\NFLFantasyDraftAssistant`. Email is
+sent through the signed-in Classic Outlook desktop app, so no mail password is
+requested or stored. The Gemini key is stored in the private data folder, never
+in `config.toml`.
 The scheduled NFL alert makes at most one Gemini request per weekly run and the
 default local guard allows no more than two requests or 20,000 estimated input
 tokens per day. On Google's free tier, supported-model input and output are free;
@@ -118,9 +119,10 @@ recorded picks, roster construction, risks, and a ready-made discussion prompt.
 
 ## Thursday alert and email
 
-`SETUP.cmd` asks whether to configure email and stores the SMTP app credential
-only in the private local data folder. Choose menu option 7 to preview exactly
-what Thursday's alert will contain and option 9 to inspect the task status.
+`SETUP.cmd` asks whether to configure email and for its recipient. Messages are
+sent through the signed-in Classic Outlook desktop app, as in the UCL assistant;
+no SMTP app password is needed. Choose menu option 7 to preview exactly what
+Thursday's alert will contain and option 9 to inspect the task status.
 
 Developer equivalents are:
 
@@ -131,8 +133,8 @@ Developer equivalents are:
 ```
 
 The watchdog uses `.venv\Scripts\python.exe`, captures stdout and stderr, rejects
-nonzero exits, times out after 30 minutes, and appends monthly logs. SMTP
-credentials are unrelated to ESPN and are never committed to GitHub.
+nonzero exits, times out after 30 minutes, and appends monthly logs. Classic
+Outlook must be installed, signed in, and available to the logged-in Windows user.
 
 ## During the live draft
 

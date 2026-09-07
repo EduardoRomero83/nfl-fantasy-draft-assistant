@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import os
+import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,30 +12,33 @@ from nflfantasy.email_report import send_email_report
 
 
 class EmailReportTests(unittest.TestCase):
-    def test_email_is_sent_only_with_explicit_credentials(self) -> None:
-        settings = EmailConfig("smtp.example.com", 587, True, "from@example.com", "to@example.com", "Board")
+    def test_email_is_sent_through_outlook_with_attachment(self) -> None:
+        settings = EmailConfig("to@example.com", "Board")
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "report.md"
             report.write_text("# Draft board", encoding="utf-8")
-            with patch.dict(
-                os.environ,
-                {"NFLFANTASY_SMTP_USERNAME": "user", "NFLFANTASY_SMTP_PASSWORD": "secret"},
-                clear=False,
-            ), patch("nflfantasy.email_report.smtplib.SMTP") as smtp:
+            with patch("nflfantasy.email_report.subprocess.run") as run:
+                run.return_value.returncode = 0
+                run.return_value.stderr = ""
+                run.return_value.stdout = ""
                 send_email_report(report, settings)
 
-        client = smtp.return_value.__enter__.return_value
-        client.starttls.assert_called_once_with()
-        client.login.assert_called_once_with("user", "secret")
-        client.send_message.assert_called_once()
+        payload = json.loads(run.call_args.kwargs["input"])
+        self.assertEqual(payload["recipient"], "to@example.com")
+        self.assertEqual(payload["attachment"], str(report.resolve()))
+        self.assertIn("Outlook.Application", run.call_args.args[0][-1])
 
-    def test_missing_credentials_are_rejected(self) -> None:
-        settings = EmailConfig("smtp.example.com", 587, True, "from@example.com", "to@example.com", "Board")
-        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {}, clear=True):
+    def test_outlook_timeout_is_reported(self) -> None:
+        settings = EmailConfig("to@example.com", "Board")
+        with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "report.md"
             report.write_text("# Draft board", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "SETUP.cmd"):
-                send_email_report(report, settings)
+            with patch(
+                "nflfantasy.email_report.subprocess.run",
+                side_effect=subprocess.TimeoutExpired("powershell", 60),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "within 60 seconds"):
+                    send_email_report(report, settings)
 
 
 if __name__ == "__main__":
