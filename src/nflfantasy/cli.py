@@ -13,6 +13,7 @@ from .espn import fetch_players, parse_players
 from .lineup import recommend_lineup
 from .intelligence import analyze_news, load_api_key
 from .news import fetch_news
+from .projections import fetch_games, project_week
 from .paths import AppPaths
 from .recommendations import DraftPick, Player, next_pick_for_position, recommend_players
 from .setup_wizard import run_setup_wizard
@@ -264,6 +265,15 @@ def main(argv: list[str] | None = None) -> int:
                 print("Projection unavailable: " + ", ".join(player.name for player in recommendation.missing_projections))
         elif args.command in {"alert", "scheduled-alert"}:
             roster_ids = load_roster(paths.roster_file)
+            weekly_projections = {}
+            projection_warning = None
+            try:
+                weekly_projections = project_week(players, fetch_games(config.season))
+                if not weekly_projections:
+                    projection_warning = "No upcoming NFL fixture projections were available."
+            except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+                projection_warning = f"Opponent and venue data unavailable: {error}"
+                print(f"Warning: weekly projections unavailable: {error}", file=sys.stderr)
             intelligence = None
             articles = []
             intelligence_warning = None
@@ -304,6 +314,8 @@ def main(argv: list[str] | None = None) -> int:
                 intelligence,
                 articles,
                 intelligence_warning,
+                weekly_projections,
+                projection_warning,
             )
             paths.alert_file.write_text(alert_text, encoding="utf-8")
             print(alert_text)

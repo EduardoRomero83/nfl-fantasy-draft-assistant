@@ -14,8 +14,10 @@ an AI agent.
 - records every selection locally and recalculates after each pick;
 - supports an unknown draft order now; set `draft_position` later;
 - creates a Thursday 2:00 PM local-time alert and emails it when configured;
-- optionally uses Gemini to explain recent sourced injury news, estimate start likelihood,
-  and name deterministic replacement candidates;
+- estimates weekly points from the ESPN season baseline, opponent strength,
+  and home/away status, then uses those scores to select starters;
+- optionally uses Gemini to explain recent sourced injury and opportunity news,
+  estimate start likelihood, and name deterministic replacement candidates;
 - writes `%LOCALAPPDATA%\NFLFantasyDraftAssistant\draft-room-context.md`.
 
 It does not automate or submit ESPN draft picks. During the draft, record picks
@@ -39,6 +41,13 @@ are logged under `%LOCALAPPDATA%\NFLFantasyDraftAssistant\logs`.
 Application data and mail credentials stay under
 `%LOCALAPPDATA%\NFLFantasyDraftAssistant` and are never stored in this repository.
 The Gemini key is stored in the same private folder, never in `config.toml`.
+The scheduled NFL alert makes at most one Gemini request per weekly run and the
+default local guard allows no more than two requests or 20,000 estimated input
+tokens per day. On Google's free tier, supported-model input and output are free;
+if the project quota is exhausted, Gemini returns an error and this assistant
+continues with ESPN-only advice. Charges are possible only after billing is
+enabled for the Google AI project. Current project quotas should be checked in
+Google AI Studio because Google changes model-specific limits over time.
 
 ## Developer setup
 
@@ -84,10 +93,11 @@ Gemini request before sending. RSS or Gemini failure falls back to ESPN-only
 advice and is shown in the alert. If the computer is asleep, Windows is
 configured to wake or catch up when possible. The user must be logged in.
 
-ESPN is not publishing usable 2026 weekly projections yet, so post-draft alerts
-currently show available full-season expected points and mark missing values as
-`N/A`. The alert explicitly asks for a manual injury and Thursday-player check.
-The model can move to weekly expected points once ESPN publishes them reliably.
+ESPN is not publishing usable 2026 weekly projections yet. Post-draft alerts
+therefore divide available full-season projections into a weekly baseline and
+apply a bounded fixture multiplier based on the opponent's public scoring record
+and home/away status. The alert shows the neutral baseline and fixture adjustment
+separately and marks missing values as `N/A`.
 
 ## Before the draft
 

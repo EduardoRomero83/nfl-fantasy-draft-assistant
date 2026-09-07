@@ -17,21 +17,30 @@ RISK_TERMS = frozenset(
         "concussion",
         "doubtful",
         "expected to play",
+        "favorable matchup",
+        "featured role",
         "full practice",
         "game-time decision",
+        "increased role",
         "inactive",
         "injured",
         "injury",
         "limited practice",
         "likely to play",
+        "more targets",
         "out",
+        "opportunity",
         "practice",
         "questionable",
         "return",
         "ruled out",
         "start",
+        "starter",
         "suspended",
         "suspension",
+        "target share",
+        "touches",
+        "breakout",
     }
 )
 TAG_PATTERN = re.compile(r"<[^>]+>")
@@ -94,13 +103,17 @@ def parse_rss(payload: bytes, entities: list[str], max_age_days: int = 7) -> lis
 
 def build_news_urls(entities: list[str], max_queries: int = 4) -> list[str]:
     urls: list[str] = []
-    risk_query = '(injury OR questionable OR doubtful OR out OR practice OR "expected to play" OR suspension)'
+    signal_query = (
+        '(injury OR questionable OR doubtful OR out OR practice OR "expected to play" '
+        'OR suspension OR "favorable matchup" OR "increased role" OR "target share" '
+        'OR touches OR opportunity OR breakout OR starter)'
+    )
     for start in range(0, len(entities), 5):
         names = entities[start : start + 5]
         if not names:
             continue
         player_query = " OR ".join(f'"{name}"' for name in names)
-        query = f"({player_query}) {risk_query} NFL fantasy when:7d"
+        query = f"({player_query}) {signal_query} NFL fantasy when:7d"
         urls.append(
             "https://news.google.com/rss/search?"
             + urllib.parse.urlencode({"q": query, "hl": "en-US", "gl": "US", "ceid": "US:en"})

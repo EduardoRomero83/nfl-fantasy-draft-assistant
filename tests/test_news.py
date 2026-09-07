@@ -24,6 +24,15 @@ class NewsTests(unittest.TestCase):
         self.assertEqual(len(urls), 4)
         self.assertTrue(all("news.google.com" in url for url in urls))
 
+    def test_parse_rss_accepts_positive_performance_signal(self) -> None:
+        published = datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S GMT")
+        payload = f"""<rss><channel><item><title>Player One sees increased role</title>
+        <link>https://example.com/role</link><pubDate>{published}</pubDate>
+        <description>More touches create a favorable matchup.</description></item></channel></rss>""".encode()
+        articles = parse_rss(payload, ["Player One"])
+        self.assertEqual(len(articles), 1)
+        self.assertIn("increased role", articles[0].risks)
+
     @patch("nflfantasy.news.urllib.request.urlopen")
     def test_malformed_rss_becomes_fallback_safe_error(self, urlopen: object) -> None:
         response = urlopen.return_value.__enter__.return_value

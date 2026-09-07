@@ -6,6 +6,7 @@ from .config import Config
 from .intelligence import IntelligenceReport
 from .lineup import recommend_lineup
 from .news import NewsArticle
+from .projections import WeeklyProjection
 from .recommendations import DraftPick, Player, recommend_players
 
 
@@ -17,6 +18,8 @@ def build_alert(
     intelligence: IntelligenceReport | None = None,
     articles: list[NewsArticle] | None = None,
     intelligence_warning: str | None = None,
+    weekly_projections: dict[int, WeeklyProjection] | None = None,
+    projection_warning: str | None = None,
 ) -> str:
     lines = [
         "NFL FANTASY THURSDAY CHECK",
@@ -26,7 +29,12 @@ def build_alert(
     ]
     by_id = {player.player_id: player for player in players}
     roster = [by_id[player_id] for player_id in roster_ids if player_id in by_id]
-    baseline = recommend_lineup(roster, config.rules) if roster else None
+    weekly_points = {
+        player_id: projection.expected_points
+        for player_id, projection in (weekly_projections or {}).items()
+    }
+    lineup_points = weekly_points if weekly_points else None
+    baseline = recommend_lineup(roster, config.rules, lineup_points) if roster else None
     unavailable = {
         insight.player_name
         for insight in (intelligence.insights if intelligence else ())
@@ -38,6 +46,7 @@ def build_alert(
         recommendation = recommend_lineup(
             [player for player in roster if player.name not in unavailable],
             config.rules,
+            lineup_points,
         )
         baseline_starter_ids = {
             item.player.player_id for item in baseline.starters
@@ -53,14 +62,16 @@ def build_alert(
                 *(
                     f"{item.slot:<4} {item.player.name:<28} "
                     + (
-                        f"{item.player.projected_points:>7.1f} expected season points"
+                        f"{weekly_points[item.player.player_id]:>7.1f} expected weekly points"
+                        if item.player.player_id in weekly_points
+                        else f"{item.player.projected_points / 17:>7.1f} season-average weekly points"
                         if item.player.projected_points > 0
-                        else "    N/A expected season points"
+                        else "    N/A expected weekly points"
                     )
                     for item in recommendation.starters
                 ),
                 "",
-                f"Expected starter season total: {recommendation.expected_points:.1f}",
+                f"Expected starter weekly total: {recommendation.expected_points:.1f}",
                 "Bench: " + (", ".join(player.name for player in recommendation.bench) or "none"),
             ]
         )
@@ -73,7 +84,7 @@ def build_alert(
                 [
                     "",
                     "ACTION REQUIRED",
-                    "ESPN has not published trustworthy projections for: "
+                    "A trustworthy expected-points baseline is unavailable for: "
                     + ", ".join(player.name for player in recommendation.missing_projections),
                     "Check injuries, Thursday-night players, and ESPN's live weekly outlook before setting the lineup.",
                 ]
@@ -98,6 +109,36 @@ def build_alert(
                 "",
                 "ACTION REQUIRED",
                 "During the draft, mark your selections as mine. Afterward, build the roster from those picks.",
+            ]
+        )
+    if weekly_projections:
+        projection_players = roster or players
+        lines.extend(["", "WEEKLY EXPECTED POINTS BY FIXTURE"])
+        shown = 0
+        for player in sorted(
+            projection_players,
+            key=lambda item: weekly_points.get(item.player_id, -1.0),
+            reverse=True,
+        ):
+            projection = weekly_projections.get(player.player_id)
+            if projection is None:
+                continue
+            venue = "vs" if projection.is_home else "at"
+            lines.append(
+                f"{player.name:<28} {projection.expected_points:>5.1f} points "
+                f"{venue} {projection.opponent} "
+                f"(neutral {projection.neutral_points:.1f}, fixture {projection.fixture_adjustment:+.1f})"
+            )
+            shown += 1
+            if not roster and shown >= 10:
+                break
+    elif projection_warning:
+        lines.extend(
+            [
+                "",
+                "WEEKLY PROJECTION WARNING",
+                projection_warning,
+                "Lineup order falls back to ESPN season-average expected points.",
             ]
         )
     if intelligence and intelligence.insights:
@@ -169,7 +210,7 @@ def build_alert(
         [
             "",
             "DATA LIMITATION",
-            "This alert uses ESPN's public data without an ESPN account. Weekly expected points will replace season totals when ESPN publishes them reliably.",
+            "This alert uses ESPN public data without an ESPN account. Weekly expected points use the season baseline, public opponent results, and a bounded home/away fixture adjustment; they are estimates, not ESPN forecasts.",
             "",
         ]
     )

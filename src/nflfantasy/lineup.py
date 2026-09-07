@@ -19,9 +19,16 @@ class LineupRecommendation:
     missing_projections: tuple[Player, ...]
 
 
-def recommend_lineup(roster: list[Player], rules: LeagueRules) -> LineupRecommendation:
+def recommend_lineup(
+    roster: list[Player],
+    rules: LeagueRules,
+    projected_points: dict[int, float] | None = None,
+) -> LineupRecommendation:
     if len({player.player_id for player in roster}) != len(roster):
         raise ValueError("Roster contains duplicate players.")
+
+    def points(player: Player) -> float:
+        return projected_points.get(player.player_id, 0.0) if projected_points is not None else player.projected_points
 
     remaining = list(roster)
     starters: list[LineupSelection] = []
@@ -29,7 +36,7 @@ def recommend_lineup(roster: list[Player], rules: LeagueRules) -> LineupRecommen
     for position in ("QB", "RB", "WR", "TE", "K", "D/ST"):
         candidates = sorted(
             (player for player in remaining if player.position == position),
-            key=lambda player: player.projected_points,
+            key=points,
             reverse=True,
         )
         for player in candidates[: slots.get(position, 0)]:
@@ -38,18 +45,18 @@ def recommend_lineup(roster: list[Player], rules: LeagueRules) -> LineupRecommen
 
     flex_candidates = sorted(
         (player for player in remaining if player.position in FLEX_POSITIONS),
-        key=lambda player: player.projected_points,
+        key=points,
         reverse=True,
     )
     for player in flex_candidates[: slots.get("FLEX", 0)]:
         starters.append(LineupSelection("FLEX", player))
         remaining.remove(player)
 
-    bench = tuple(sorted(remaining, key=lambda player: player.projected_points, reverse=True))
-    missing = tuple(player for player in roster if player.projected_points <= 0)
+    bench = tuple(sorted(remaining, key=points, reverse=True))
+    missing = tuple(player for player in roster if points(player) <= 0)
     return LineupRecommendation(
         starters=tuple(starters),
         bench=bench,
-        expected_points=sum(item.player.projected_points for item in starters),
+        expected_points=sum(points(item.player) for item in starters),
         missing_projections=missing,
     )
