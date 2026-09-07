@@ -21,6 +21,7 @@ def send_email_report(path: Path, settings: EmailConfig) -> None:
     )
     payload = json.dumps(
         {
+            "sender": settings.recipient,
             "recipient": settings.recipient,
             "subject": settings.subject,
             "body": f"The current NFL fantasy {report_kind} is attached.",
@@ -34,9 +35,24 @@ $ErrorActionPreference = 'Stop'
 $payload = [Console]::In.ReadToEnd() | ConvertFrom-Json
 $outlook = $null
 $mail = $null
+$sendAccount = $null
 try {
     $outlook = New-Object -ComObject Outlook.Application
+    foreach ($account in $outlook.Session.Accounts) {
+        if ([string]::Equals(
+            [string]$account.SmtpAddress,
+            [string]$payload.sender,
+            [StringComparison]::OrdinalIgnoreCase
+        )) {
+            $sendAccount = $account
+            break
+        }
+    }
+    if ($sendAccount -eq $null) {
+        throw "Classic Outlook has no signed-in account matching $($payload.sender)."
+    }
     $mail = $outlook.CreateItem(0)
+    $mail.SendUsingAccount = $sendAccount
     $mail.To = $payload.recipient
     $mail.Subject = $payload.subject
     $mail.Body = $payload.body
@@ -46,6 +62,9 @@ try {
 finally {
     if ($mail -ne $null) {
         [void][Runtime.InteropServices.Marshal]::ReleaseComObject($mail)
+    }
+    if ($sendAccount -ne $null) {
+        [void][Runtime.InteropServices.Marshal]::ReleaseComObject($sendAccount)
     }
     if ($outlook -ne $null) {
         [void][Runtime.InteropServices.Marshal]::ReleaseComObject($outlook)

@@ -119,10 +119,12 @@ recorded picks, roster construction, risks, and a ready-made discussion prompt.
 
 ## Thursday alert and email
 
-`SETUP.cmd` asks whether to configure email and for its recipient. Messages are
-sent through the signed-in Classic Outlook desktop app, as in the UCL assistant;
-no SMTP app password is needed. Choose menu option 7 to preview exactly what
-Thursday's alert will contain and option 9 to inspect the task status.
+`SETUP.cmd` asks whether to configure email and for the Outlook account address.
+That exact signed-in Classic Outlook account is selected as the sender, and the
+alert is sent to the same address. The program fails clearly if Outlook has no
+matching account instead of silently using its default account. No SMTP app
+password is needed. Choose menu option 7 to preview exactly what Thursday's
+alert will contain and option 9 to inspect the task status.
 
 Developer equivalents are:
 

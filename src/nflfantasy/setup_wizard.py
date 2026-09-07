@@ -65,7 +65,10 @@ def run_setup_wizard(paths: AppPaths) -> None:
     ]
     if configure_email:
         previous_email = existing.email if existing else None
-        recipient = _ask("Recipient email address", previous_email.recipient if previous_email else "")
+        recipient = _ask(
+            "Outlook account email (alerts send from and to this address)",
+            previous_email.recipient if previous_email else "",
+        )
         if "@" not in recipient or recipient.startswith("@") or recipient.endswith("@"):
             raise ValueError("Email setup requires a valid recipient address.")
         email_lines = [
